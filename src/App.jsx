@@ -1,4 +1,5 @@
 import './App.css';
+import Board from './components/Board'; // ADD THIS IMPORT
 
 function App() {
   return (
@@ -9,8 +10,7 @@ function App() {
       </header>
       
       <main className="board-container">
-        {/* The Board component built by Squad 2 will be inserted right here later */}
-        <p>The Kanban Board will render here...</p>
+        <Board /> {/* ADD THE COMPONENT HERE */}
       </main>
     </div>
   );
