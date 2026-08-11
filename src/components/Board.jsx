@@ -1,21 +1,17 @@
 import React from 'react';
 import Column from './Column';
-import { tasksData } from '../data/mockData'; // Import the mock data
+import { tasksData } from '../data/mockData'; 
 
-function Board() {
-  // Filter the data into three arrays based on their status
+export default function Board() {
   const todoTasks = tasksData.filter(task => task.status === 'To Do');
   const doingTasks = tasksData.filter(task => task.status === 'Doing');
   const doneTasks = tasksData.filter(task => task.status === 'Done');
 
   return (
-    <div className="board">
-      {/* Pass the filtered arrays as a new 'tasks' prop to each Column */}
+    <div className="flex flex-col lg:flex-row gap-6 mt-6 w-full">
       <Column title="To Do" tasks={todoTasks} />
       <Column title="Doing" tasks={doingTasks} />
       <Column title="Done" tasks={doneTasks} />
     </div>
   );
 }
-
-export default Board;
