@@ -1,17 +1,29 @@
-import './App.css';
-import Board from './components/Board'; // ADD THIS IMPORT
+import React from 'react';
+import { Routes, Route } from 'react-router-dom';
+
+// Import Pages & Components
+import Navbar from './components/Navbar';
+import Landing from './pages/Landing';
+import Login from './pages/Login';
+import BoardPage from './pages/BoardPage';
 
 function App() {
   return (
-    <div className="app-container">
-      <header className="app-header">
-        <h1>CollabBoard Workspace</h1>
-        <p>Project Management Dashboard</p>
-      </header>
+    // Wrapping the whole app in the dark background ensures no white flashes
+    <div className="min-h-screen bg-gray-950 flex flex-col">
       
-      <main className="board-container">
-        <Board /> {/* ADD THE COMPONENT HERE */}
-      </main>
+      {/* The Navbar sits outside the Routes so it always shows up */}
+      <Navbar />
+
+      {/* The main content area that changes based on the URL */}
+      <div className="flex-grow">
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/board" element={<BoardPage />} />
+        </Routes>
+      </div>
+
     </div>
   );
 }
