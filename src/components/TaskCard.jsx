@@ -1,4 +1,3 @@
-import React from 'react';
 
 export default function TaskCard({ title, description, createdAt, timeSpent, userPhoto, activityBadge }) {
   return (

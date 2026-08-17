@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
 export default function Navbar() {
@@ -23,6 +22,7 @@ export default function Navbar() {
         <div className="flex gap-6 font-medium text-sm">
           <Link to="/" className={`pb-1 ${isActive('/')}`}>Home</Link>
           <Link to="/board" className={`pb-1 ${isActive('/board')}`}>Board</Link>
+          <Link to="/profile" className={`pb-1 ${isActive('/profile')}`}>Profile</Link>
         </div>
 
         {/* Dark theme button that glows emerald on hover */}

@@ -1,5 +1,5 @@
-import React from 'react';
 import { Routes, Route } from 'react-router-dom';
+import ProfilePage from './pages/ProfilePage';
 
 // Import Pages & Components
 import Navbar from './components/Navbar';
@@ -21,6 +21,7 @@ function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/board" element={<BoardPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
         </Routes>
       </div>
 
