@@ -1,16 +1,21 @@
-# React + Vite
-
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+CollabBoard Workspace
+CollabBoard is a bespoke, high-performance task management application built from the ground up to eliminate visual clutter. Designed with a custom "Soft Alabaster & Clay" aesthetic, it provides teams with a distraction-free, lightning-fast environment to organize workflows, track data, and ship faster.
+Core Features
+Kanban Task Management: Responsive, distraction-free board for tracking workflows and project state.
+Advanced Contact Search: Error-tolerant user lookup utilizing a custom Levenshtein distance algorithm.
+Dynamic Dashboards: Real-time project filtering and progress tracking optimized with React hooks.
+Profile Management: Avatar and detail updates featuring instant client-side file validation and previews.
+Custom Interface: Proprietary design system built with Tailwind CSS, focusing on minimal visual clutter.
+Tech Stack
+Frontend: React (powered by Vite for rapid development)
+Styling: Tailwind CSS v4
+Routing: React Router DOM
+Icons: Custom raw SVG component architecture for zero dependency bloat and instant load times.
+Design & Wireframes
+Before writing the code, we mapped out the core user flows and component architecture to ensure a seamless, intuitive experience.
+Note: The initial structural wireframe mapping out the Kanban columns, navigation, and dashboard layout.
+Local Development
+To run this project on your local machine:
+Clone the repository down to your computer.
+Run npm install to install the dependencies.
+Run npm run dev to start the Vite development server.
