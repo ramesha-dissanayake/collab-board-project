@@ -19,6 +19,9 @@ Proprietary design system built with Tailwind CSS, focusing on minimal visual cl
 
 ## Design & Wireframes
 Before writing the code, we mapped out the core user flows and component architecture to ensure a seamless, intuitive experience.
+ 
+![CollabBoard Wireframe](./Wireframe.png)
+
 > Note: The initial structural wireframe mapping out the Kanban columns, navigation, and dashboard layout.
 
 ## Local Development
