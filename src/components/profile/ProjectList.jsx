@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+
 import Icon from './Icons';
 
 const statusStyles = {
@@ -8,27 +10,61 @@ const statusStyles = {
 
 function ProjectCard({ project }) {
   return (
-    <article className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h3 className="text-lg font-extrabold text-stone-900">{project.name}</h3>
-          <p className="mt-1 text-sm leading-6 text-stone-500">{project.description}</p>
+    <Link
+      to={`/projects/${project.id}/board`}
+      className="block"
+      aria-label={`Open ${project.name} board`}
+    >
+      <article className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-extrabold text-stone-900">
+              {project.name}
+            </h3>
+
+            <p className="mt-1 text-sm leading-6 text-stone-500">
+              {project.description}
+            </p>
+          </div>
+
+          <span
+            className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ring-1 ring-inset ${statusStyles[project.status]}`}
+          >
+            {project.status}
+          </span>
         </div>
-        <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ring-1 ring-inset ${statusStyles[project.status]}`}>{project.status}</span>
-      </div>
-      <div className="mt-5 flex items-center justify-between text-xs font-bold text-stone-500">
-        <span>Started {project.startedMonth}</span>
-        <span>{project.progress}%</span>
-      </div>
-      <div className="mt-2 h-2 overflow-hidden rounded-full bg-stone-100">
-        <div className="h-full rounded-full bg-emerald-500" style={{ width: `${project.progress}%` }} />
-      </div>
-      <div className="mt-4 flex -space-x-2">
-        {project.members.map((member, index) => (
-          <span key={member} className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-stone-800 text-[10px] font-extrabold text-white" style={{ zIndex: project.members.length - index }}>{member}</span>
-        ))}
-      </div>
-    </article>
+
+        <div className="mt-5 flex items-center justify-between text-xs font-bold text-stone-500">
+          <span>Started {project.startedMonth}</span>
+          <span>{project.progress}%</span>
+        </div>
+
+        <div className="mt-2 h-2 overflow-hidden rounded-full bg-stone-100">
+          <div
+            className="h-full rounded-full bg-emerald-500"
+            style={{ width: `${project.progress}%` }}
+          />
+        </div>
+
+        <div className="mt-4 flex items-end justify-between">
+          <div className="flex -space-x-2">
+            {project.members.map((member, index) => (
+              <span
+                key={member}
+                className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-stone-800 text-[10px] font-extrabold text-white"
+                style={{ zIndex: project.members.length - index }}
+              >
+                {member}
+              </span>
+            ))}
+          </div>
+
+          <span className="text-xs font-extrabold text-emerald-700">
+            Open board →
+          </span>
+        </div>
+      </article>
+    </Link>
   );
 }
 
