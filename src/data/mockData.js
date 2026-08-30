@@ -1,6 +1,7 @@
 export const tasksData = [
   {
     id: 'task-1',
+    projectId: 'project-1',
     title: 'Scaffold React App',
     description: 'Use Vite to generate the initial application shell.',
     status: 'Done',
@@ -11,6 +12,7 @@ export const tasksData = [
   },
   {
     id: 'task-2',
+    projectId: 'project-1',
     title: 'Build Main Layout',
     description: 'Create the header and main container in App.jsx.',
     status: 'Doing',
@@ -21,6 +23,7 @@ export const tasksData = [
   },
   {
     id: 'task-3',
+    projectId: 'project-1',
     title: 'Write Mock Data',
     description: 'Structure the JSON array for the task cards.',
     status: 'Doing',
@@ -31,6 +34,7 @@ export const tasksData = [
   },
   {
     id: 'task-4',
+    projectId: 'project-1',
     title: 'Map Data to Components',
     description: 'Pass the mock data down into the TaskCards.',
     status: 'To Do',

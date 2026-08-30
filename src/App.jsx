@@ -1,30 +1,33 @@
-import { Routes, Route } from 'react-router-dom';
-import ProfilePage from './pages/ProfilePage';
+import { Navigate, Route, Routes } from 'react-router-dom';
 
-// Import Pages & Components
 import Navbar from './components/Navbar';
+import BoardPage from './pages/BoardPage';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
-import BoardPage from './pages/BoardPage';
+import ProfilePage from './pages/ProfilePage';
 
 function App() {
   return (
-    // Wrapping the whole app in the dark background ensures no white flashes
-    <div className="min-h-screen bg-gray-950 flex flex-col">
-      
-      {/* The Navbar sits outside the Routes so it always shows up */}
+    <div className="flex min-h-screen flex-col bg-gray-950">
       <Navbar />
 
-      {/* The main content area that changes based on the URL */}
       <div className="flex-grow">
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/board" element={<BoardPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+
+          <Route
+            path="/projects/:projectId/board"
+            element={<BoardPage />}
+          />
+
+          <Route
+            path="/board"
+            element={<Navigate to="/profile" replace />}
+          />
         </Routes>
       </div>
-
     </div>
   );
 }
