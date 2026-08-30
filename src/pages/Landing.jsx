@@ -2,95 +2,92 @@ import { Link } from 'react-router-dom';
 
 export default function Landing() {
   return (
-    <div className="bg-stone-50 min-h-screen font-sans text-stone-800">
-      
-      {/* Ultra-subtle paper texture overlay */}
-      <div 
-        className="fixed inset-0 opacity-[0.03] mix-blend-multiply pointer-events-none z-0" 
-        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
-      ></div>
+    <div className="min-h-screen bg-stone-50 font-sans text-stone-800">
+      <div
+        className="pointer-events-none fixed inset-0 z-0 opacity-[0.03] mix-blend-multiply"
+        style={{
+          backgroundImage:
+            `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+        }}
+      />
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 flex flex-col pt-16 pb-20">
-        
-        {/* --- TWO-COLUMN HERO SECTION --- */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-8 items-center mb-32 mt-8">
-          
-          {/* Left Column: Text and Buttons */}
+      <div className="relative z-10 mx-auto flex max-w-7xl flex-col px-6 pb-20 pt-16 lg:px-8">
+        <div className="mb-32 mt-8 grid grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-8">
           <div className="max-w-2xl">
-            
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-stone-200 text-stone-600 text-xs font-bold uppercase tracking-widest mb-8 shadow-sm">
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-              Workspace is Live
+            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-stone-600 shadow-sm">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              Collaborative Task Workspace
             </div>
 
-            
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-stone-900 tracking-tight mb-6 leading-tight">
-              Manage Tasks at
-              {/* Adding 'block' forces this span to neatly drop to its own line */}
-              <span className="text-emerald-600 block mt-2">
-                Speed of Light
+            <h1 className="mb-6 text-5xl font-extrabold leading-tight tracking-tight text-stone-900 md:text-6xl lg:text-7xl">
+              Organize Teamwork
+              <span className="mt-2 block text-emerald-600">
+                In One Place
               </span>
             </h1>
 
-
-            <p className="text-stone-500 text-lg md:text-xl mb-10 font-medium leading-relaxed">
-              A bespoke, high-performance workspace for your team. 
-              Organize your workflow, track your data, and ship faster without the visual clutter.
+            <p className="mb-10 text-lg font-medium leading-relaxed text-stone-500 md:text-xl">
+              Organize projects, track task progress, and keep your team
+              focused with a simple collaborative workspace.
             </p>
 
-            <div className="flex flex-col sm:flex-row items-center gap-5">
-              <Link 
-                to="/board" 
-                className="w-full sm:w-auto px-8 py-4 bg-emerald-600 text-white font-bold rounded-lg shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 text-lg"
+            <div className="flex flex-col items-center gap-5 sm:flex-row">
+              <Link
+                to="/profile"
+                className="w-full rounded-lg bg-emerald-600 px-8 py-4 text-lg font-bold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg sm:w-auto"
               >
-                Enter Workspace
+                View Projects
               </Link>
-              <Link 
-                to="/login" 
-                className="w-full sm:w-auto px-8 py-4 bg-white border border-stone-200 text-stone-700 font-bold rounded-lg hover:border-emerald-600 hover:text-emerald-700 shadow-sm transition-colors duration-200 text-lg"
+
+              <Link
+                to="/login"
+                className="w-full rounded-lg border border-stone-200 bg-white px-8 py-4 text-lg font-bold text-stone-700 shadow-sm transition-colors duration-200 hover:border-emerald-600 hover:text-emerald-700 sm:w-auto"
               >
                 Sign In
               </Link>
             </div>
           </div>
 
-          {/* Right Column: Featured Image */}
-          <div className="relative w-full h-[400px] lg:h-[550px] rounded-2xl overflow-hidden shadow-xl border border-stone-200/60 transform lg:-rotate-1 hover:rotate-0 transition-transform duration-500">
-            {/* The Image */}
-            <img 
-              src="https://images.unsplash.com/photo-1499951360447-b19be8fe80f5?auto=format&fit=crop&w=1200&q=80" 
-              alt="Minimalist workspace" 
-              className="absolute inset-0 w-full h-full object-cover"
+          <div className="relative h-[400px] w-full overflow-hidden rounded-2xl border border-stone-200/60 shadow-xl transition-transform duration-500 hover:rotate-0 lg:h-[550px] lg:-rotate-1">
+            <img
+              src="https://images.unsplash.com/photo-1499951360447-b19be8fe80f5?auto=format&fit=crop&w=1200&q=80"
+              alt="Team workspace"
+              className="absolute inset-0 h-full w-full object-cover"
             />
-            {/* Emerald Color Overlay (Multiplies over the image to match your brand) */}
-            <div className="absolute inset-0 bg-emerald-900/10 mix-blend-multiply"></div>
-            {/* Inner glow/shadow for a premium inset look */}
-            <div className="absolute inset-0 shadow-[inset_0_0_20px_rgba(0,0,0,0.05)] rounded-2xl"></div>
-          </div>
 
+            <div className="absolute inset-0 bg-emerald-900/10 mix-blend-multiply" />
+
+            <div className="absolute inset-0 rounded-2xl shadow-[inset_0_0_20px_rgba(0,0,0,0.05)]" />
+          </div>
         </div>
 
-        {/* --- ABOUT US SECTION --- */}
         <div className="border-t border-stone-200 pt-20">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-            
+          <div className="grid grid-cols-1 gap-12 md:grid-cols-2">
             <div>
-              <h2 className="text-3xl font-bold text-stone-900 mb-4">About the Project</h2>
-              <p className="text-emerald-600 font-bold tracking-widest uppercase text-sm mb-6">Designed for Focus</p>
-            </div>
-            
-            <div className="text-stone-600 text-lg leading-relaxed space-y-6">
-              <p>
-                CollabBoard was built from the ground up to solve a simple problem: modern project management tools have become too cluttered, too slow, and too distracting. We needed a workspace that gets out of the way so the work can actually get done.
-              </p>
-              <p>
-                By prioritizing a clean, minimalist user interface and lightning-fast state management, this application ensures that tracking your milestones, managing daily tasks, and collaborating with your team feels effortless. No unnecessary features, just pure productivity.
+              <h2 className="mb-4 text-3xl font-bold text-stone-900">
+                About the Project
+              </h2>
+
+              <p className="mb-6 text-sm font-bold uppercase tracking-widest text-emerald-600">
+                Built for Collaboration
               </p>
             </div>
-            
+
+            <div className="space-y-6 text-lg leading-relaxed text-stone-600">
+              <p>
+                CollabBoard is a collaborative task management application
+                designed to help teams organize project work in a clear and
+                structured way.
+              </p>
+
+              <p>
+                Team members can work with project boards that organize tasks
+                across To Do, Doing, and Done stages, making it easier to
+                understand current progress and responsibilities.
+              </p>
+            </div>
           </div>
         </div>
-
       </div>
     </div>
   );
