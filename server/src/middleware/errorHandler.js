@@ -4,7 +4,8 @@ export function notFoundHandler(req, res, next) {
   next(new NotFoundError("Route"));
 }
 
-export function errorHandler(err, req, res, next) {
+export function errorHandler(err, req, res, next) { 
+    void next;
   if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
     return res.status(400).json({
       error: {

@@ -1,3 +1,4 @@
+import process from 'node:process';
 import "dotenv/config";
 
 const jwtSecret = process.env.JWT_SECRET;
