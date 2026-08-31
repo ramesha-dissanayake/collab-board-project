@@ -1,17 +1,19 @@
 import jwt from "jsonwebtoken";
 import { config } from "../config.js";
+import { AppError } from "../utils/AppError.js";
 
 export function authenticate(req, res, next) {
   const header = req.headers.authorization ?? "";
   const [scheme, token] = header.split(" ");
 
   if (scheme !== "Bearer" || !token) {
-    return res.status(401).json({
-      error: {
-        message: "Authentication required",
-        code: "NO_TOKEN",
-      },
-    });
+    return next(
+      new AppError(
+        "Authentication required",
+        401,
+        "NO_TOKEN"
+      )
+    );
   }
 
   try {
@@ -22,15 +24,16 @@ export function authenticate(req, res, next) {
       email: payload.email,
     };
 
-    return next();
+    next();
   } catch (error) {
     const expired = error.name === "TokenExpiredError";
 
-    return res.status(401).json({
-      error: {
-        message: expired ? "Token expired" : "Invalid token",
-        code: expired ? "TOKEN_EXPIRED" : "BAD_TOKEN",
-      },
-    });
+    next(
+      new AppError(
+        expired ? "Token expired" : "Invalid token",
+        401,
+        expired ? "TOKEN_EXPIRED" : "BAD_TOKEN"
+      )
+    );
   }
 }
