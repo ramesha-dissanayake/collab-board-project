@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import { config } from "./config.js";
+import authRoutes from "./routes/authRoutes.js";
 
 const app = express();
 
@@ -20,5 +21,7 @@ app.get("/api/health", (req, res) => {
     uptime: process.uptime(),
   });
 });
+
+app.use("/api/auth", authRoutes);
 
 export default app;
