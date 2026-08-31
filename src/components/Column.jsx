@@ -1,24 +1,34 @@
 import TaskCard from './TaskCard';
 
-export default function Column({ title, tasks }) {
+export default function Column({
+  title,
+  tasks,
+  onStatusChange,
+  onDelete,
+}) {
   return (
-    <div className="flex-1 min-w-[300px] bg-stone-100/50 rounded-xl p-4 border border-stone-200 shadow-sm">
-      <div className="flex justify-between items-center mb-5 mt-1">
-        <h2 className="font-bold text-stone-700 uppercase text-sm tracking-widest">
+    <div className="min-w-[300px] flex-1 rounded-xl border border-stone-200 bg-stone-100/50 p-4 shadow-sm">
+
+      <div className="mb-5 mt-1 flex items-center justify-between">
+
+        <h2 className="text-sm font-bold uppercase tracking-widest text-stone-700">
           {title}
         </h2>
 
-        <span className="bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-bold px-2.5 py-1 rounded-full">
+        <span className="rounded-full border border-emerald-200 bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-700">
           {tasks.length}
         </span>
       </div>
 
-      <div className="flex flex-col gap-3 min-h-[100px]">
+      <div className="flex min-h-[100px] flex-col gap-3">
+
         {tasks.length > 0 ? (
           tasks.map((task) => (
             <TaskCard
               key={task.id}
-              {...task}
+              task={task}
+              onStatusChange={onStatusChange}
+              onDelete={onDelete}
             />
           ))
         ) : (
@@ -28,6 +38,7 @@ export default function Column({ title, tasks }) {
             </p>
           </div>
         )}
+
       </div>
     </div>
   );

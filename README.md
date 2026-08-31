@@ -1,14 +1,14 @@
 # CollabBoard
 
-CollabBoard is a collaborative Kanban-style project and task management application developed as a progressively built full-stack group project.
+CollabBoard is a collaborative Kanban-style project and task management application developed as a progressive full-stack group project.
 
-The application is designed around project workspaces where users can view their projects, open a project-specific task board, and track work across three workflow stages:
+Users can create an account, sign in, view their profile and projects, open a project-specific board, and manage tasks across three workflow stages:
 
 - **To Do**
 - **Doing**
 - **Done**
 
-The project is being developed incrementally across multiple milestones, beginning with the frontend structure and later introducing the backend API, authentication, database persistence, testing, real-time collaboration, and deployment.
+The application is being developed incrementally across multiple milestones.
 
 ---
 
@@ -18,216 +18,132 @@ The project is being developed incrementally across multiple milestones, beginni
 
 **Status: Completed**
 
-Milestone 1 focuses on establishing the frontend structure of CollabBoard using React, reusable components, mock data, routing, a wireframe, and a documented component architecture.
+Milestone 1 established the React frontend, routing, reusable components, profile page, project dashboard, project-specific Kanban boards, mock data, and the initial UI structure.
 
-The current version represents the completed frontend foundation before backend development begins.
+### Milestone 2 — Working REST API with Mock Data
+
+**Status: Completed**
+
+Milestone 2 introduces a Node.js and Express backend and connects the React frontend to live REST API endpoints.
+
+The application now includes real authentication, protected routes, server-side validation, project endpoints, and full task CRUD operations.
 
 ---
 
-## Implemented in Milestone 1
+## Assignment 02 Features
 
-### Landing Page
+### Authentication
 
-- Responsive CollabBoard landing page
-- Project-focused introduction
-- Navigation to the project dashboard
-- Navigation to the login interface
+- User registration
+- User login
+- Password hashing using `bcryptjs`
+- JWT authentication
+- Protected API routes
+- Current authenticated user endpoint
+- Frontend authentication state
+- Automatic Bearer token handling
 
-### Profile and Project Dashboard
+### Projects
 
-- User profile display
-- Editable profile details
-- Profile photo selection and preview
-- Client-side validation for profile information
-- Profile information stored using `localStorage`
-- Project search
-- Project filtering by status
-- Project filtering by starting month
-- Project progress display
-- Project member indicators
+- View accessible projects
+- View a single project
+- Create projects through the API
+- Open a project-specific board from the profile page
 
-### Project Navigation
+### Tasks
 
-Each project has its own board route.
-
-Selecting a project from the profile/dashboard opens the board associated with that specific project.
-
-Example:
-
-```text
-/profile
-   ↓
-Select CollabBoard Launch
-   ↓
-/projects/project-1/board
-```
-
-### Kanban Board
-
-- Reusable Board component
-- Reusable Column components
-- Reusable TaskCard components
-- Three workflow columns:
+- View tasks belonging to a project
+- Create tasks
+- Update task workflow status
+- Delete tasks
+- Search tasks from the frontend
+- Display tasks under:
   - To Do
   - Doing
   - Done
-- Task count displayed for each column
-- Mock task data
-- Tasks associated with a specific project
-- Empty-state display when a project has no tasks
-- Responsive board layout
 
-### Frontend Routing
+### Validation and Error Handling
 
-React Router is used to manage navigation between the main application pages.
+- Zod server-side validation
+- Centralized Express error handling
+- Consistent JSON error responses
+- Authentication errors
+- Validation errors
+- Not-found errors
 
-Current routes:
+### Frontend Integration
+
+The React frontend no longer reads project-board tasks directly from frontend mock data.
+
+Instead, it communicates with the Express API through a centralized API client.
+
+```text
+React Components
+       |
+       v
+src/api
+       |
+       v
+HTTP Requests
+       |
+       v
+Express REST API
+       |
+       v
+Controller
+       |
+       v
+Service
+       |
+       v
+Repository
+       |
+       v
+In-Memory Mock Data
+```
+
+---
+
+## Application Flow
+
+```text
+Landing Page
+     |
+     v
+Login / Create Account
+     |
+     v
+Profile Page
+     |
+     v
+Project List
+     |
+     v
+Select Project
+     |
+     v
+Project Board
+     |
+     +---- To Do
+     |
+     +---- Doing
+     |
+     +---- Done
+```
+
+Protected pages require a valid authenticated session.
+
+---
+
+## Frontend Routes
 
 | Route | Purpose |
 | --- | --- |
 | `/` | Landing page |
-| `/login` | Login interface |
-| `/profile` | User profile and project dashboard |
-| `/projects/:projectId/board` | Board belonging to a selected project |
-| `/board` | Redirects users to the project dashboard |
-
----
-
-## Current Application Flow
-
-The frontend currently follows this structure:
-
-```text
-Landing Page
-     │
-     ├───────────────┐
-     │               │
-     ▼               ▼
-Projects           Login
-/Profile           Interface
-     │
-     ▼
-Select Project
-     │
-     ▼
-Project Board
-     │
-     ├── To Do
-     ├── Doing
-     └── Done
-```
-
-The login page is currently a frontend interface only.
-
-Real authentication and protected routes will be introduced during Milestone 2.
-
----
-
-## Component Tree
-
-The Milestone 1 frontend is organized into reusable page and UI components.
-
-```text
-App
-├── Navbar
-│
-├── Landing
-│
-├── Login
-│
-├── ProfilePage
-│   ├── ProfileHeader
-│   │   ├── Avatar
-│   │   ├── Icon
-│   │   └── EditProfileDialog
-│   │
-│   └── ProjectList
-│       └── ProjectCard
-│
-└── BoardPage
-    └── Board
-        └── Column
-            └── TaskCard
-```
-
-This structure separates page-level components from reusable interface components and makes the frontend easier to extend when the REST API and database are introduced.
-
----
-
-## Project Structure
-
-```text
-collab-board-project/
-│
-├── public/
-│
-├── src/
-│   │
-│   ├── components/
-│   │   ├── profile/
-│   │   │   ├── Avatar.jsx
-│   │   │   ├── Icons.jsx
-│   │   │   ├── ProfileHeader.jsx
-│   │   │   └── ProjectList.jsx
-│   │   │
-│   │   ├── Board.jsx
-│   │   ├── Column.jsx
-│   │   ├── Navbar.jsx
-│   │   └── TaskCard.jsx
-│   │
-│   ├── data/
-│   │   ├── mockData.js
-│   │   └── profileData.js
-│   │
-│   ├── pages/
-│   │   ├── BoardPage.jsx
-│   │   ├── Landing.jsx
-│   │   ├── Login.jsx
-│   │   └── ProfilePage.jsx
-│   │
-│   ├── App.jsx
-│   ├── index.css
-│   └── main.jsx
-│
-├── Wireframe.png
-├── index.html
-├── package.json
-├── package-lock.json
-└── README.md
-```
-
----
-
-## Mock Data Structure
-
-Milestone 1 currently uses local mock data instead of a backend database.
-
-Project data is stored in:
-
-```text
-src/data/profileData.js
-```
-
-Task data is stored in:
-
-```text
-src/data/mockData.js
-```
-
-Each task contains a `projectId`, allowing the frontend to display only the tasks associated with the selected project.
-
-Example relationship:
-
-```text
-Project
-   │
-   └── Tasks
-        ├── Task 1
-        ├── Task 2
-        └── Task 3
-```
-
-This structure prepares the frontend for API and MongoDB integration in later milestones.
+| `/login` | Login and account registration |
+| `/profile` | Authenticated user profile and projects |
+| `/projects/:projectId/board` | Selected project's Kanban board |
+| `/board` | Redirects to `/profile` |
 
 ---
 
@@ -241,93 +157,384 @@ This structure prepares the frontend for API and MongoDB integration in later mi
 - React Router DOM
 - Tailwind CSS
 
-### Development and Version Control
+### Backend
+
+- Node.js
+- Express
+- JSON Web Token (`jsonwebtoken`)
+- `bcryptjs`
+- Zod
+- CORS
+- dotenv
+
+### Development
 
 - Git
 - GitHub
-- ESLint
 - npm
-
-Backend and database technologies will be introduced during the next milestones.
-
----
-
-## Design and Wireframe
-
-A wireframe was created before the main board implementation to establish the layout of the CollabBoard workspace.
-
-The wireframe defines the basic Kanban structure, including:
-
-- Add Task interface
-- Task search area
-- To Do column
-- Doing column
-- Done column
-- Task cards
-- User/activity indicators
-- Task progress information
-
-![CollabBoard Wireframe](./Wireframe.png)
-
-The final frontend has evolved from the initial wireframe while preserving its main Kanban-board structure.
+- ESLint
+- Postman
 
 ---
 
-## Local Development
+## Backend Architecture
 
-### Prerequisites
+The Express backend follows a layered structure.
 
-Make sure the following are installed:
+```text
+Route
+  |
+  v
+Controller
+  |
+  v
+Service
+  |
+  v
+Repository
+  |
+  v
+In-Memory Data
+```
+
+HTTP-specific objects such as `req` and `res` are handled at the controller level, while business logic is kept inside services.
+
+---
+
+## Project Structure
+
+```text
+collab-board-project/
+|
+├── docs/
+│   └── postman/
+│       └── CollabBoard-M2.postman_collection.json
+|
+├── src/
+│   ├── api/
+│   │   ├── authApi.js
+│   │   ├── client.js
+│   │   ├── projectApi.js
+│   │   └── taskApi.js
+│   │
+│   ├── components/
+│   │   ├── profile/
+│   │   ├── Board.jsx
+│   │   ├── Column.jsx
+│   │   ├── Navbar.jsx
+│   │   └── TaskCard.jsx
+│   │
+│   ├── context/
+│   │   └── AuthContext.jsx
+│   │
+│   ├── data/
+│   ├── pages/
+│   ├── App.jsx
+│   ├── index.css
+│   └── main.jsx
+│
+├── server/
+│   ├── src/
+│   │   ├── controllers/
+│   │   ├── data/
+│   │   ├── middleware/
+│   │   ├── repositories/
+│   │   ├── routes/
+│   │   ├── schemas/
+│   │   ├── services/
+│   │   ├── utils/
+│   │   ├── app.js
+│   │   ├── config.js
+│   │   └── server.js
+│   │
+│   ├── .env.example
+│   └── package.json
+│
+├── .env.example
+├── package.json
+└── README.md
+```
+
+---
+
+# Running the Application
+
+## Prerequisites
+
+Install:
 
 - Node.js
 - npm
 - Git
 
-### 1. Clone the Repository
+---
+
+## 1. Clone the Repository
 
 ```bash
 git clone https://github.com/ramesha-dissanayake/collab-board-project.git
-```
-
-### 2. Open the Project Folder
-
-```bash
 cd collab-board-project
 ```
 
-### 3. Install Dependencies
+---
+
+## 2. Install Frontend Dependencies
 
 ```bash
 npm install
 ```
 
-### 4. Start the Development Server
+Create a root `.env` file:
+
+```env
+VITE_API_URL=http://localhost:4000
+```
+
+Start the frontend:
 
 ```bash
 npm run dev
 ```
 
-Vite will provide a local development URL in the terminal.
+The Vite frontend normally runs at:
+
+```text
+http://localhost:5173
+```
+
+---
+
+## 3. Install Backend Dependencies
+
+Open another terminal:
+
+```bash
+cd server
+npm install
+```
+
+Create:
+
+```text
+server/.env
+```
+
+using `server/.env.example` as a template:
+
+```env
+PORT=4000
+CLIENT_ORIGIN=http://localhost:5173
+JWT_SECRET=replace-with-your-own-secret
+```
+
+Start the Express server:
+
+```bash
+npm run dev
+```
+
+The backend runs at:
+
+```text
+http://localhost:4000
+```
+
+---
+
+## API Contract
+
+### Authentication
+
+| Method | Endpoint | Description | Auth | Success |
+| --- | --- | --- | --- | --- |
+| POST | `/api/auth/register` | Register a user | No | 201 |
+| POST | `/api/auth/login` | Login and receive JWT | No | 200 |
+| GET | `/api/auth/me` | Get current user | Yes | 200 |
+
+### Projects
+
+| Method | Endpoint | Description | Auth | Success |
+| --- | --- | --- | --- | --- |
+| GET | `/api/projects` | List accessible projects | Yes | 200 |
+| POST | `/api/projects` | Create a project | Yes | 201 |
+| GET | `/api/projects/:id` | Get a project | Yes | 200 |
+| GET | `/api/projects/:projectId/tasks` | Get project tasks | Yes | 200 |
+
+### Tasks
+
+| Method | Endpoint | Description | Auth | Success |
+| --- | --- | --- | --- | --- |
+| POST | `/api/tasks` | Create a task | Yes | 201 |
+| PATCH | `/api/tasks/:id` | Update a task | Yes | 200 |
+| DELETE | `/api/tasks/:id` | Delete a task | Yes | 204 |
+
+---
+
+## Authentication
+
+After a successful login, the backend returns a JSON Web Token.
+
+The frontend stores the token and includes it in protected requests using:
+
+```text
+Authorization: Bearer <token>
+```
+
+Passwords are never stored as plain text. They are hashed using `bcryptjs`.
+
+The JWT secret is stored in:
+
+```text
+server/.env
+```
+
+The real `.env` files are ignored by Git.
+
+---
+
+## Validation and Error Responses
+
+Request data is validated on the server using Zod.
+
+Example validation error:
+
+```json
+{
+  "error": {
+    "message": "Validation failed",
+    "code": "VALIDATION_ERROR",
+    "details": [
+      {
+        "field": "title",
+        "message": "Title must be at least 3 characters"
+      }
+    ]
+  }
+}
+```
+
+Common HTTP responses include:
+
+| Status | Meaning |
+| --- | --- |
+| 200 | Successful request |
+| 201 | Resource created |
+| 204 | Resource deleted successfully |
+| 400 | Validation or request error |
+| 401 | Authentication required or invalid |
+| 403 | Access forbidden |
+| 404 | Resource or route not found |
+| 409 | Duplicate resource |
+| 500 | Unexpected server error |
+
+---
+
+## Postman API Collection
+
+The Assignment 02 Postman collection is included at:
+
+```text
+docs/postman/CollabBoard-M2.postman_collection.json
+```
+
+Import the file into Postman to test the REST API.
+
+The collection includes requests for:
+
+- Registration
+- Login
+- Current authenticated user
+- Project retrieval
+- Project creation
+- Project task retrieval
+- Task creation
+- Task updating
+- Task deletion
+- Validation errors
+- Authentication errors
+- Unknown routes
+
+Because Milestone 2 uses server-side in-memory data, run **Register User** and then **Login User** after restarting the Express server.
 
 ---
 
 ## Available Scripts
 
-### Start Development Server
+### Frontend Development Server
 
 ```bash
 npm run dev
 ```
 
-### Run ESLint
+### Frontend Production Build
+
+```bash
+npm run build
+```
+
+### ESLint
 
 ```bash
 npm run lint
 ```
 
-### Create Production Build
+### Backend Development Server
 
 ```bash
+cd server
+npm run dev
+```
+
+---
+
+## Data Persistence in Milestone 2
+
+Milestone 2 intentionally uses in-memory mock data on the backend.
+
+This means runtime changes are reset when the Express server restarts.
+
+For example:
+
+- Registered users are reset
+- Newly created projects are reset
+- Created or modified tasks are reset
+
+Persistent MongoDB storage will be introduced in the database milestone.
+
+Profile details such as age, description and profile-image information can still be stored locally in the browser using `localStorage`.
+
+---
+
+## Testing and Verification
+
+The Milestone 2 implementation has been manually verified using the browser, PowerShell HTTP requests and Postman.
+
+The following flows are supported:
+
+```text
+Register
+   ↓
+Login
+   ↓
+JWT Authentication
+   ↓
+Profile
+   ↓
+Load Projects
+   ↓
+Open Project Board
+   ↓
+Create Task
+   ↓
+Update Task
+   ↓
+Delete Task
+```
+
+The project is also checked using:
+
+```bash
+npm run lint
 npm run build
 ```
 
@@ -335,138 +542,87 @@ npm run build
 
 ## Git Workflow
 
-Development is completed using separate feature or refactor branches rather than making changes directly on `main`.
-
-The general workflow is:
+Development is completed using feature branches and pull requests rather than making development changes directly on `main`.
 
 ```text
+Feature Branch
+      |
+      v
+Commits
+      |
+      v
+Pull Request
+      |
+      v
+Review / Merge
+      |
+      v
 main
-  │
-  ├── feature/...
-  │
-  ├── feature/...
-  │
-  └── refactor/...
-          │
-          ▼
-     Pull Request
-          │
-          ▼
-        main
 ```
 
-Changes are reviewed through pull requests before being merged into the main branch.
+Assignment submission versions are identified using Git tags.
 
-This keeps the Git history clear and makes individual pieces of work and team contributions visible.
+Final Milestone 2 submission tag:
 
----
-
-## Current Client-Side Persistence
-
-The profile page currently uses browser `localStorage` to preserve edited profile information after a refresh.
-
-This includes information such as:
-
-- Name
-- User ID
-- Age
-- Description
-- Profile image data
-
-This is currently limited to profile information.
-
-Full client-side caching/offline support for project and task data will be introduced in a later milestone.
+```text
+Assignment-02
+```
 
 ---
 
 ## Known Limitations
 
-The current application represents the completed Milestone 1 frontend foundation.
+The following features are outside the scope of Milestone 2:
 
-The following features are intentionally not implemented yet:
+- MongoDB persistence
+- Mongoose models
+- Offline synchronization
+- Automated client/server test suites
+- Socket.io real-time updates
+- Concurrent edit detection
+- Docker deployment
+- Production deployment
 
-- User registration is not yet implemented
-- Login does not currently authenticate against a server
-- Routes are not yet protected by authentication
-- Project and task data currently use mock data
-- Projects cannot yet be created through a backend API
-- Tasks cannot yet be created through a backend API
-- Tasks cannot yet be edited or deleted
-- Tasks cannot yet be moved between workflow states
-- Task search is not yet functional
-- MongoDB persistence has not yet been implemented
-- Server-side data validation has not yet been implemented
-- Concurrent edit detection has not yet been implemented
-- Real-time Socket.io synchronization has not yet been implemented
-- Automated client and server tests have not yet been implemented
-- GitHub Actions CI has not yet been implemented
-- Docker and Docker Compose have not yet been implemented
-- The application has not yet been deployed as the completed full-stack system
-
-These features belong to the upcoming project milestones rather than the Milestone 1 static frontend.
+These features will be introduced progressively in later milestones.
 
 ---
 
-## Milestone 2 — Next Development Stage
+## Future Development
 
-The next stage of CollabBoard will introduce the backend and connect the frontend to real application data.
-
-Planned Milestone 2 work includes:
-
-- Node.js backend
-- Express REST API
-- Routes/controllers/models architecture
-- User registration
-- User login
-- Password handling
-- JWT authentication
-- Protected routes
-- Project API endpoints
-- Task CRUD API endpoints
-- Connecting the React frontend to the REST API
-- Replacing relevant mock data with API responses
-- API contract documentation
-
-The backend architecture will preserve the frontend relationship established during Milestone 1:
-
-```text
-User
-  │
-  └── Projects
-        │
-        └── Tasks
-              │
-              ├── To Do
-              ├── Doing
-              └── Done
-```
-
----
-
-## Future Milestones
-
-Following the REST API milestone, CollabBoard will progressively introduce:
+The next stages will extend CollabBoard with:
 
 ```text
 MongoDB + Mongoose
         ↓
-Client-side caching / offline support
+Persistent Data
         ↓
-Automated client and server testing
+Client-side Caching
+        ↓
+Automated Testing
         ↓
 GitHub Actions CI
         ↓
-Socket.io real-time synchronization
+Socket.io Real-Time Updates
         ↓
-Concurrent edit handling
+Concurrent Edit Handling
         ↓
-Docker Compose
+Docker
         ↓
-Public deployment
+Deployment
+```
+
+---
+
+## Repository
+
+GitHub:
+
+```text
+https://github.com/ramesha-dissanayake/collab-board-project
 ```
 
 ---
 
 ## Project Goal
 
-The final goal of CollabBoard is to provide a full-stack collaborative task board where authenticated team members can manage projects and tasks, track work across Kanban stages, persist project data, and receive updates from other connected users in real time.
+The goal of CollabBoard is to provide a full-stack collaborative task management application where authenticated users can work with projects, manage tasks through a Kanban workflow, and progressively gain persistent and real-time collaboration capabilities as later milestones are completed.

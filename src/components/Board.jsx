@@ -1,28 +1,46 @@
 import Column from './Column';
-import { tasksData } from '../data/mockData';
 
-export default function Board({ projectId }) {
-  const projectTasks = tasksData.filter(
-    (task) => task.projectId === projectId,
+export default function Board({
+  tasks,
+  onStatusChange,
+  onDelete,
+}) {
+  const todoTasks = tasks.filter(
+    (task) => task.status === 'todo'
   );
 
-  const todoTasks = projectTasks.filter(
-    (task) => task.status === 'To Do',
+  const doingTasks = tasks.filter(
+    (task) => task.status === 'doing'
   );
 
-  const doingTasks = projectTasks.filter(
-    (task) => task.status === 'Doing',
-  );
-
-  const doneTasks = projectTasks.filter(
-    (task) => task.status === 'Done',
+  const doneTasks = tasks.filter(
+    (task) => task.status === 'done'
   );
 
   return (
     <div className="mt-6 flex w-full flex-col gap-6 lg:flex-row">
-      <Column title="To Do" tasks={todoTasks} />
-      <Column title="Doing" tasks={doingTasks} />
-      <Column title="Done" tasks={doneTasks} />
+
+      <Column
+        title="To Do"
+        tasks={todoTasks}
+        onStatusChange={onStatusChange}
+        onDelete={onDelete}
+      />
+
+      <Column
+        title="Doing"
+        tasks={doingTasks}
+        onStatusChange={onStatusChange}
+        onDelete={onDelete}
+      />
+
+      <Column
+        title="Done"
+        tasks={doneTasks}
+        onStatusChange={onStatusChange}
+        onDelete={onDelete}
+      />
+
     </div>
   );
 }
