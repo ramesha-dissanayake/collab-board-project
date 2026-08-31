@@ -10,6 +10,10 @@ export const userRepository = {
     );
   },
 
+  async findById(id) {
+    return users.find((user) => user.id === id) ?? null;
+  },
+
   async create({ name, email, passwordHash }) {
     const user = {
       id: randomUUID(),

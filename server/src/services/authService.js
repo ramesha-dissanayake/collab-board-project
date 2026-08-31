@@ -100,3 +100,18 @@ export async function login({ email, password }) {
     user: publicUser(user),
   };
 }
+
+export async function getCurrentUser(userId) {
+  const user = await userRepository.findById(userId);
+
+  if (!user) {
+    return {
+      error: "Authenticated user not found",
+      status: 401,
+    };
+  }
+
+  return {
+    user: publicUser(user),
+  };
+}
