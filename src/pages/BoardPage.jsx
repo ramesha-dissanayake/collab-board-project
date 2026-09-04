@@ -16,7 +16,11 @@ import {
 } from '../api/taskApi';
 
 import Board from '../components/Board';
-import { useAuth } from '../context/AuthContext';
+import ProjectMembers from '../components/ProjectMembers';
+
+import {
+  useAuth,
+} from '../context/AuthContext';
 
 export default function BoardPage() {
   const { projectId } = useParams();
@@ -36,6 +40,7 @@ export default function BoardPage() {
       try {
         setLoading(true);
         setError('');
+        setNotFound(false);
 
         const [projectData, taskData] =
           await Promise.all([
@@ -52,7 +57,8 @@ export default function BoardPage() {
         }
 
         setError(
-          err.message || 'Unable to load project board'
+          err.message ||
+            'Unable to load project board',
         );
       } finally {
         setLoading(false);
@@ -63,7 +69,9 @@ export default function BoardPage() {
   }, [projectId]);
 
   const visibleTasks = useMemo(() => {
-    const value = query.trim().toLowerCase();
+    const value = query
+      .trim()
+      .toLowerCase();
 
     if (!value) {
       return tasks;
@@ -72,29 +80,39 @@ export default function BoardPage() {
     return tasks.filter((task) =>
       `${task.title} ${task.description} ${task.assignee}`
         .toLowerCase()
-        .includes(value)
+        .includes(value),
     );
   }, [query, tasks]);
 
   async function handleAddTask() {
-    const title = window.prompt('Task title');
+    const title =
+      window.prompt(
+        'Task title',
+      );
 
     if (!title?.trim()) {
       return;
     }
 
     const description =
-      window.prompt('Task description') ?? '';
+      window.prompt(
+        'Task description',
+      ) ?? '';
 
     try {
-      const task = await createTask({
-        projectId,
-        title: title.trim(),
-        description: description.trim(),
-        status: 'todo',
-        assignee: user?.name ?? '',
-        priority: 'normal',
-      });
+      setError('');
+
+      const task =
+        await createTask({
+          projectId,
+          title: title.trim(),
+          description:
+            description.trim(),
+          status: 'todo',
+          assignee:
+            user?.name ?? '',
+          priority: 'normal',
+        });
 
       setTasks((current) => [
         ...current,
@@ -102,56 +120,80 @@ export default function BoardPage() {
       ]);
     } catch (err) {
       setError(
-        err.message || 'Unable to create task'
+        err.message ||
+          'Unable to create task',
       );
     }
   }
 
-  async function handleStatusChange(taskId, status) {
+  async function handleStatusChange(
+    taskId,
+    status,
+  ) {
     try {
-      const updated = await updateTask(
-        taskId,
-        { status }
-      );
+      setError('');
+
+      const updated =
+        await updateTask(
+          taskId,
+          {
+            status,
+          },
+        );
 
       setTasks((current) =>
         current.map((task) =>
-          task.id === taskId ? updated : task
-        )
+          task.id === taskId
+            ? updated
+            : task,
+        ),
       );
     } catch (err) {
       setError(
-        err.message || 'Unable to update task'
+        err.message ||
+          'Unable to update task',
       );
     }
   }
 
-  async function handleDelete(taskId) {
-    const confirmed = window.confirm(
-      'Delete this task?'
-    );
+  async function handleDelete(
+    taskId,
+  ) {
+    const confirmed =
+      window.confirm(
+        'Delete this task?',
+      );
 
     if (!confirmed) {
       return;
     }
 
     try {
+      setError('');
+
       await deleteTask(taskId);
 
       setTasks((current) =>
         current.filter(
-          (task) => task.id !== taskId
-        )
+          (task) =>
+            task.id !== taskId,
+        ),
       );
     } catch (err) {
       setError(
-        err.message || 'Unable to delete task'
+        err.message ||
+          'Unable to delete task',
       );
     }
   }
 
   if (notFound) {
-    return <Navigate to="/profile" replace />;
+    return (
+      <Navigate
+        to="/profile"
+        replace
+      />
+    );
   }
 
   if (loading) {
@@ -201,6 +243,12 @@ export default function BoardPage() {
           </div>
         )}
 
+        <ProjectMembers
+          project={project}
+          currentUser={user}
+          onProjectChange={setProject}
+        />
+
         <div className="mb-8 flex flex-col items-center justify-between gap-4 sm:flex-row">
 
           <button
@@ -208,7 +256,10 @@ export default function BoardPage() {
             onClick={handleAddTask}
             className="flex w-full items-center gap-2 rounded-lg border border-stone-200 bg-white px-4 py-2 font-bold text-stone-700 shadow-sm transition-all hover:border-emerald-600 hover:text-emerald-700 sm:w-auto"
           >
-            <span className="text-lg">+</span>
+            <span className="text-lg">
+              +
+            </span>
+
             Add New Task
           </button>
 
@@ -217,19 +268,26 @@ export default function BoardPage() {
               type="text"
               value={query}
               onChange={(event) =>
-                setQuery(event.target.value)
+                setQuery(
+                  event.target.value,
+                )
               }
               placeholder="Search Tasks..."
               className="w-full rounded-lg border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-stone-800 shadow-sm outline-none transition-all placeholder:text-stone-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
             />
           </div>
+
         </div>
 
         <main>
           <Board
             tasks={visibleTasks}
-            onStatusChange={handleStatusChange}
-            onDelete={handleDelete}
+            onStatusChange={
+              handleStatusChange
+            }
+            onDelete={
+              handleDelete
+            }
           />
         </main>
 
