@@ -1,39 +1,78 @@
-import { randomUUID } from "node:crypto";
-import { users } from "../data/users.js";
+import mongoose from "mongoose";
+
+import {
+  User,
+} from "../models/User.js";
+
+function normalizeEmail(email) {
+  return email
+    .trim()
+    .toLowerCase();
+}
 
 export const userRepository = {
   async findByEmail(email) {
-    return (
-      users.find(
-        (user) => user.email.toLowerCase() === email.toLowerCase()
-      ) ?? null
-    );
+    return User.findOne({
+      email: normalizeEmail(email),
+    });
+  },
+
+  async findByEmailWithPassword(email) {
+    return User.findOne({
+      email: normalizeEmail(email),
+    }).select("+passwordHash");
   },
 
   async findById(id) {
-    return users.find((user) => user.id === id) ?? null;
+    if (
+      !mongoose.isValidObjectId(id)
+    ) {
+      return null;
+    }
+
+    return User.findById(id);
   },
 
-  async create({ name, email, passwordHash }) {
-    const user = {
-      id: randomUUID(),
+  async create({
+    name,
+    email,
+    passwordHash,
+  }) {
+    return User.create({
       name,
-      email: email.toLowerCase(),
+      email:
+        normalizeEmail(email),
       passwordHash,
-      createdAt: new Date().toISOString(),
-    };
-
-    users.push(user);
-
-    return user;
+    });
   },
 };
 
 export function publicUser(user) {
+  if (!user) {
+    return null;
+  }
+
+  const value =
+    typeof user.toJSON ===
+    "function"
+      ? user.toJSON()
+      : user;
+
   return {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    createdAt: user.createdAt,
+    id:
+      value.id ??
+      value._id?.toString(),
+
+    name:
+      value.name,
+
+    email:
+      value.email,
+
+    createdAt:
+      value.createdAt,
+
+    updatedAt:
+      value.updatedAt,
   };
 }
