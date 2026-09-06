@@ -138,3 +138,22 @@ export const updateTaskSchema =
 
       "At least one field must be updated"
     );
+
+export const taskQuerySchema =
+  z.object({
+    status:
+      z
+        .enum([
+          "todo",
+          "doing",
+          "done",
+        ])
+        .optional(),
+
+    assignee:
+      z
+        .string()
+        .trim()
+        .min(1)
+        .optional(),
+  });
