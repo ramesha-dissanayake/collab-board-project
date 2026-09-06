@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -23,6 +24,9 @@ import {
 import Board
   from '../components/Board';
 
+import ConnectionStatus
+  from '../components/ConnectionStatus';
+
 import ProjectMembers
   from '../components/ProjectMembers';
 
@@ -34,8 +38,28 @@ import {
   cacheProject,
   cacheProjectBoard,
   cacheTask,
+  clearCachedProject,
+  getCachedProject,
+  getCachedProjectTasks,
   removeCachedTask,
 } from '../services/localProjectStore';
+
+import {
+  getPendingTaskOperationCount,
+  queueTaskCreate,
+  queueTaskDelete,
+  queueTaskUpdate,
+  syncPendingTaskOperations,
+} from '../services/offlineTaskQueue';
+
+function isNetworkError(
+  error,
+) {
+  return (
+    !navigator.onLine ||
+    !error?.status
+  );
+}
 
 export default function BoardPage() {
   const {
@@ -76,13 +100,51 @@ export default function BoardPage() {
     setNotFound,
   ] = useState(false);
 
-  useEffect(() => {
-    async function loadBoard() {
-      try {
-        setLoading(true);
-        setError('');
-        setNotFound(false);
+  const [
+    connectionStatus,
+    setConnectionStatus,
+  ] = useState(
+    navigator.onLine
+      ? 'online'
+      : 'offline',
+  );
 
+  const [
+    pendingCount,
+    setPendingCount,
+  ] = useState(0);
+
+  const refreshPendingCount =
+    useCallback(
+      async () => {
+        if (
+          !user?.id ||
+          !projectId
+        ) {
+          setPendingCount(0);
+
+          return;
+        }
+
+        const count =
+          await getPendingTaskOperationCount(
+            user.id,
+            projectId,
+          );
+
+        setPendingCount(
+          count,
+        );
+      },
+      [
+        projectId,
+        user?.id,
+      ],
+    );
+
+  const refreshFromServer =
+    useCallback(
+      async () => {
         const [
           projectData,
           taskData,
@@ -110,32 +172,229 @@ export default function BoardPage() {
           projectData,
           taskData,
         );
-      } catch (err) {
+      },
+      [
+        projectId,
+        user?.id,
+      ],
+    );
+
+  const syncAndRefresh =
+    useCallback(
+      async () => {
         if (
-          err.status === 404
+          !user?.id ||
+          !projectId
         ) {
-          setNotFound(
-            true,
+          return;
+        }
+
+        setConnectionStatus(
+          'syncing',
+        );
+
+        setError('');
+
+        const syncResult =
+          await syncPendingTaskOperations(
+            user.id,
+            projectId,
           );
+
+        if (
+          !syncResult.completed &&
+          isNetworkError(
+            syncResult.error,
+          )
+        ) {
+          setConnectionStatus(
+            'offline',
+          );
+
+          await refreshPendingCount();
 
           return;
         }
 
-        setError(
-          err.message ||
-            'Unable to load project board',
-        );
+        if (
+          !syncResult.completed
+        ) {
+          setError(
+            syncResult.error
+              ?.status === 409
+              ? 'A local change could not sync because the server version has changed.'
+              : 'Some local changes could not be synchronized yet.',
+          );
+        }
+
+        try {
+          await refreshFromServer();
+
+          setConnectionStatus(
+            'online',
+          );
+        } catch (serverError) {
+          if (
+            serverError.status ===
+            404
+          ) {
+            await clearCachedProject(
+              user.id,
+              projectId,
+            );
+
+            setNotFound(true);
+
+            return;
+          }
+
+          if (
+            isNetworkError(
+              serverError,
+            )
+          ) {
+            setConnectionStatus(
+              'offline',
+            );
+
+            return;
+          }
+
+          setError(
+            serverError.message ||
+              'Unable to refresh project board',
+          );
+        } finally {
+          await refreshPendingCount();
+        }
+      },
+      [
+        projectId,
+        refreshFromServer,
+        refreshPendingCount,
+        user?.id,
+      ],
+    );
+
+  useEffect(() => {
+    let cancelled =
+      false;
+
+    async function loadBoard() {
+      try {
+        setLoading(true);
+        setError('');
+        setNotFound(false);
+
+        const [
+          cachedProject,
+          cachedTasks,
+        ] =
+          await Promise.all([
+            getCachedProject(
+              user?.id,
+              projectId,
+            ),
+
+            getCachedProjectTasks(
+              user?.id,
+              projectId,
+            ),
+          ]);
+
+        if (cancelled) {
+          return;
+        }
+
+        if (cachedProject) {
+          setProject(
+            cachedProject,
+          );
+
+          setTasks(
+            cachedTasks,
+          );
+
+          setLoading(
+            false,
+          );
+        }
+
+        await refreshPendingCount();
+
+        if (
+          !navigator.onLine
+        ) {
+          setConnectionStatus(
+            'offline',
+          );
+
+          if (!cachedProject) {
+            setError(
+              'This board is not available offline yet. Open it once while connected so it can be cached.',
+            );
+          }
+
+          return;
+        }
+
+        await syncAndRefresh();
       } finally {
-        setLoading(
-          false,
-        );
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     }
 
     loadBoard();
+
+    return () => {
+      cancelled = true;
+    };
   }, [
     projectId,
+    refreshPendingCount,
+    syncAndRefresh,
     user?.id,
+  ]);
+
+  useEffect(() => {
+    function handleOffline() {
+      setConnectionStatus(
+        'offline',
+      );
+
+      void refreshPendingCount();
+    }
+
+    function handleOnline() {
+      void syncAndRefresh();
+    }
+
+    window.addEventListener(
+      'offline',
+      handleOffline,
+    );
+
+    window.addEventListener(
+      'online',
+      handleOnline,
+    );
+
+    return () => {
+      window.removeEventListener(
+        'offline',
+        handleOffline,
+      );
+
+      window.removeEventListener(
+        'online',
+        handleOnline,
+      );
+    };
+  }, [
+    refreshPendingCount,
+    syncAndRefresh,
   ]);
 
   const visibleTasks =
@@ -162,6 +421,66 @@ export default function BoardPage() {
       tasks,
     ]);
 
+  async function createOfflineTask(
+    payload,
+  ) {
+    const now =
+      new Date().toISOString();
+
+    const localTask = {
+      id:
+        `local-${crypto.randomUUID()}`,
+
+      projectId,
+
+      ...payload,
+
+      assigneeId:
+        user?.id ?? null,
+
+      position:
+        payload.position ?? 0,
+
+      version: 0,
+
+      createdAt: now,
+      updatedAt: now,
+
+      localOnly: true,
+      pendingSync: true,
+    };
+
+    setTasks(
+      (current) => [
+        ...current,
+        localTask,
+      ],
+    );
+
+    await cacheTask(
+      user?.id,
+      projectId,
+      localTask,
+      {
+        pendingSync: true,
+        localOnly: true,
+      },
+    );
+
+    await queueTaskCreate(
+      user?.id,
+      projectId,
+      localTask,
+      payload,
+    );
+
+    setConnectionStatus(
+      'offline',
+    );
+
+    await refreshPendingCount();
+  }
+
   async function handleAddTask() {
     const title =
       window.prompt(
@@ -179,28 +498,44 @@ export default function BoardPage() {
         'Task description',
       ) ?? '';
 
+    const payload = {
+      projectId,
+
+      title:
+        title.trim(),
+
+      description:
+        description.trim(),
+
+      status:
+        'todo',
+
+      assignee:
+        user?.name ?? '',
+
+      priority:
+        'normal',
+
+      position: 0,
+    };
+
+    if (
+      !navigator.onLine
+    ) {
+      await createOfflineTask(
+        payload,
+      );
+
+      return;
+    }
+
     try {
       setError('');
 
       const task =
-        await createTask({
-          projectId,
-
-          title:
-            title.trim(),
-
-          description:
-            description.trim(),
-
-          status:
-            'todo',
-
-          assignee:
-            user?.name ?? '',
-
-          priority:
-            'normal',
-        });
+        await createTask(
+          payload,
+        );
 
       setTasks(
         (current) => [
@@ -214,18 +549,104 @@ export default function BoardPage() {
         projectId,
         task,
       );
-    } catch (err) {
+    } catch (createError) {
+      if (
+        isNetworkError(
+          createError,
+        )
+      ) {
+        await createOfflineTask(
+          payload,
+        );
+
+        return;
+      }
+
       setError(
-        err.message ||
+        createError.message ||
           'Unable to create task',
       );
     }
+  }
+
+  async function updateTaskOffline(
+    task,
+    changes,
+  ) {
+    const updated = {
+      ...task,
+      ...changes,
+      updatedAt:
+        new Date().toISOString(),
+      pendingSync: true,
+    };
+
+    setTasks(
+      (current) =>
+        current.map(
+          (item) =>
+            item.id ===
+            task.id
+              ? updated
+              : item,
+        ),
+    );
+
+    await cacheTask(
+      user?.id,
+      projectId,
+      updated,
+      {
+        pendingSync: true,
+        localOnly:
+          Boolean(
+            task.localOnly,
+          ),
+      },
+    );
+
+    await queueTaskUpdate(
+      user?.id,
+      projectId,
+      task.id,
+      changes,
+    );
+
+    setConnectionStatus(
+      'offline',
+    );
+
+    await refreshPendingCount();
   }
 
   async function handleStatusChange(
     taskId,
     status,
   ) {
+    const task =
+      tasks.find(
+        (item) =>
+          item.id === taskId,
+      );
+
+    if (!task) {
+      return;
+    }
+
+    if (
+      !navigator.onLine ||
+      task.localOnly
+    ) {
+      await updateTaskOffline(
+        task,
+        {
+          status,
+        },
+      );
+
+      return;
+    }
+
     try {
       setError('');
 
@@ -240,11 +661,11 @@ export default function BoardPage() {
       setTasks(
         (current) =>
           current.map(
-            (task) =>
-              task.id ===
+            (item) =>
+              item.id ===
               taskId
                 ? updated
-                : task,
+                : item,
           ),
       );
 
@@ -253,12 +674,57 @@ export default function BoardPage() {
         projectId,
         updated,
       );
-    } catch (err) {
+    } catch (updateError) {
+      if (
+        isNetworkError(
+          updateError,
+        )
+      ) {
+        await updateTaskOffline(
+          task,
+          {
+            status,
+          },
+        );
+
+        return;
+      }
+
       setError(
-        err.message ||
+        updateError.message ||
           'Unable to update task',
       );
     }
+  }
+
+  async function deleteTaskOffline(
+    task,
+  ) {
+    await queueTaskDelete(
+      user?.id,
+      projectId,
+      task.id,
+    );
+
+    setTasks(
+      (current) =>
+        current.filter(
+          (item) =>
+            item.id !== task.id,
+        ),
+    );
+
+    await removeCachedTask(
+      user?.id,
+      projectId,
+      task.id,
+    );
+
+    setConnectionStatus(
+      'offline',
+    );
+
+    await refreshPendingCount();
   }
 
   async function handleDelete(
@@ -273,6 +739,27 @@ export default function BoardPage() {
       return;
     }
 
+    const task =
+      tasks.find(
+        (item) =>
+          item.id === taskId,
+      );
+
+    if (!task) {
+      return;
+    }
+
+    if (
+      !navigator.onLine ||
+      task.localOnly
+    ) {
+      await deleteTaskOffline(
+        task,
+      );
+
+      return;
+    }
+
     try {
       setError('');
 
@@ -283,8 +770,8 @@ export default function BoardPage() {
       setTasks(
         (current) =>
           current.filter(
-            (task) =>
-              task.id !==
+            (item) =>
+              item.id !==
               taskId,
           ),
       );
@@ -294,9 +781,21 @@ export default function BoardPage() {
         projectId,
         taskId,
       );
-    } catch (err) {
+    } catch (deleteError) {
+      if (
+        isNetworkError(
+          deleteError,
+        )
+      ) {
+        await deleteTaskOffline(
+          task,
+        );
+
+        return;
+      }
+
       setError(
-        err.message ||
+        deleteError.message ||
           'Unable to delete task',
       );
     }
@@ -324,7 +823,10 @@ export default function BoardPage() {
     );
   }
 
-  if (loading) {
+  if (
+    loading &&
+    !project
+  ) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-stone-50">
         <p className="font-bold text-stone-500">
@@ -335,7 +837,20 @@ export default function BoardPage() {
   }
 
   if (!project) {
-    return null;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-stone-50 p-6">
+        <div className="max-w-md rounded-2xl border border-amber-200 bg-white p-6 text-center shadow-sm">
+          <h1 className="text-xl font-extrabold text-stone-900">
+            Board unavailable
+          </h1>
+
+          <p className="mt-2 text-sm leading-6 text-stone-500">
+            {error ||
+              'Connect to the server once so this board can be saved for offline use.'}
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -364,6 +879,18 @@ export default function BoardPage() {
             {project.description}
           </p>
         </header>
+
+        <ConnectionStatus
+          status={
+            connectionStatus
+          }
+          pendingCount={
+            pendingCount
+          }
+          onRetry={
+            syncAndRefresh
+          }
+        />
 
         {error && (
           <div className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
