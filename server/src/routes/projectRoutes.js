@@ -113,6 +113,19 @@ router.delete(
 );
 
 router.get(
+  "/:projectId/stats/overdue",
+
+  validateObjectIdParam(
+    "projectId",
+    "Project"
+  ),
+
+  asyncHandler(
+    taskController.overdueStats
+  )
+);
+
+router.get(
   "/:projectId/tasks",
 
   validateObjectIdParam(

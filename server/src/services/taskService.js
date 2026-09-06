@@ -128,3 +128,18 @@ export async function deleteTask(
     taskId
   );
 }
+
+export async function getOverdueStats(
+  projectId,
+  userId
+) {
+  await ensureProjectAccess(
+    projectId,
+    userId
+  );
+
+  return taskRepository
+    .aggregateOverdueByAssignee(
+      projectId
+    );
+}

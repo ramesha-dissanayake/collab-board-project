@@ -75,6 +75,32 @@ const taskSchema = new mongoose.Schema(
   }
 );
 
+// Board screen:
+// find({ projectId, status }).sort({ position: 1 })
+taskSchema.index({
+  projectId: 1,
+  status: 1,
+  position: 1,
+});
+
+// Overdue task queries.
+taskSchema.index({
+  projectId: 1,
+  dueDate: 1,
+});
+
+// "My tasks" / assignee queries.
+taskSchema.index({
+  assigneeId: 1,
+  status: 1,
+});
+
+// Free-text task search.
+taskSchema.index({
+  title: "text",
+  description: "text",
+});
+
 taskSchema.set(
   "toJSON",
   {

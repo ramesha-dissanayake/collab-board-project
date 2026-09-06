@@ -29,6 +29,23 @@ export async function listForProject(
     });
 }
 
+export async function overdueStats(
+  req,
+  res
+) {
+  const stats =
+    await taskService.getOverdueStats(
+      req.params.projectId,
+      req.user.id
+    );
+
+  return res
+    .status(200)
+    .json({
+      data: stats,
+    });
+}
+
 export async function create(
   req,
   res
