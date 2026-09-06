@@ -1,23 +1,140 @@
-import { z } from "zod";
+import {
+  z,
+} from "zod";
 
-export const createTaskSchema = z.object({
-  projectId: z.string().min(1, "Project ID is required"),
-  title: z.string().trim().min(3, "Title must be at least 3 characters"),
-  description: z.string().trim().optional().default(""),
-  status: z.enum(["todo", "doing", "done"]).optional().default("todo"),
-  assignee: z.string().trim().optional().default(""),
-  priority: z.enum(["low", "normal", "high"]).optional().default("normal"),
-});
+const objectIdSchema =
+  z
+    .string()
+    .trim()
+    .regex(
+      /^[a-f\d]{24}$/i,
+      "A valid MongoDB ObjectId is required"
+    );
 
-export const updateTaskSchema = z
-  .object({
-    title: z.string().trim().min(3).optional(),
-    description: z.string().trim().optional(),
-    status: z.enum(["todo", "doing", "done"]).optional(),
-    assignee: z.string().trim().optional(),
-    priority: z.enum(["low", "normal", "high"]).optional(),
-  })
-  .refine(
-    (data) => Object.keys(data).length > 0,
-    "At least one field must be updated"
-  );
+const dueDateSchema =
+  z
+    .string()
+    .datetime()
+    .nullable();
+
+export const createTaskSchema =
+  z.object({
+    projectId:
+      objectIdSchema,
+
+    title:
+      z
+        .string()
+        .trim()
+        .min(
+          3,
+          "Title must be at least 3 characters"
+        ),
+
+    description:
+      z
+        .string()
+        .trim()
+        .optional()
+        .default(""),
+
+    status:
+      z
+        .enum([
+          "todo",
+          "doing",
+          "done",
+        ])
+        .optional()
+        .default("todo"),
+
+    assignee:
+      z
+        .string()
+        .trim()
+        .optional()
+        .default(""),
+
+    priority:
+      z
+        .enum([
+          "low",
+          "normal",
+          "high",
+        ])
+        .optional()
+        .default("normal"),
+
+    dueDate:
+      dueDateSchema
+        .optional()
+        .default(null),
+
+    position:
+      z
+        .number()
+        .int()
+        .min(0)
+        .optional()
+        .default(0),
+  });
+
+export const updateTaskSchema =
+  z
+    .object({
+      title:
+        z
+          .string()
+          .trim()
+          .min(3)
+          .optional(),
+
+      description:
+        z
+          .string()
+          .trim()
+          .optional(),
+
+      status:
+        z
+          .enum([
+            "todo",
+            "doing",
+            "done",
+          ])
+          .optional(),
+
+      assignee:
+        z
+          .string()
+          .trim()
+          .optional(),
+
+      priority:
+        z
+          .enum([
+            "low",
+            "normal",
+            "high",
+          ])
+          .optional(),
+
+      dueDate:
+        dueDateSchema
+          .optional(),
+
+      position:
+        z
+          .number()
+          .int()
+          .min(0)
+          .optional(),
+    })
+    .refine(
+      (data) =>
+        Object.keys(
+          data
+        ).length > 0,
+
+      "At least one field must be updated"
+    );
