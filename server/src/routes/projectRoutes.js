@@ -1,4 +1,6 @@
-import { Router } from "express";
+import {
+  Router,
+} from "express";
 
 import * as projectController
   from "../controllers/projectController.js";
@@ -19,14 +21,25 @@ import {
 } from "../middleware/asyncHandler.js";
 
 import {
+  validateObjectIdParam,
+} from "../middleware/validateObjectIdParam.js";
+
+import {
   addProjectMemberSchema,
   createProjectSchema,
   memberCandidateQuerySchema,
 } from "../schemas/projectSchema.js";
 
-const router = Router();
+import {
+  taskQuerySchema,
+} from "../schemas/taskSchema.js";
 
-router.use(authenticate);
+const router =
+  Router();
+
+router.use(
+  authenticate
+);
 
 router.get(
   "/",
@@ -47,20 +60,35 @@ router.post(
 
 router.get(
   "/:id/member-candidate",
+
+  validateObjectIdParam(
+    "id",
+    "Project"
+  ),
+
   validate(
     memberCandidateQuerySchema,
     "query"
   ),
+
   asyncHandler(
-    projectController.findMemberCandidate
+    projectController
+      .findMemberCandidate
   )
 );
 
 router.post(
   "/:id/members",
+
+  validateObjectIdParam(
+    "id",
+    "Project"
+  ),
+
   validate(
     addProjectMemberSchema
   ),
+
   asyncHandler(
     projectController.addMember
   )
@@ -68,6 +96,17 @@ router.post(
 
 router.delete(
   "/:id/members/:memberId",
+
+  validateObjectIdParam(
+    "id",
+    "Project"
+  ),
+
+  validateObjectIdParam(
+    "memberId",
+    "User"
+  ),
+
   asyncHandler(
     projectController.removeMember
   )
@@ -75,6 +114,17 @@ router.delete(
 
 router.get(
   "/:projectId/tasks",
+
+  validateObjectIdParam(
+    "projectId",
+    "Project"
+  ),
+
+  validate(
+    taskQuerySchema,
+    "query"
+  ),
+
   asyncHandler(
     taskController.listForProject
   )
@@ -82,6 +132,12 @@ router.get(
 
 router.get(
   "/:id",
+
+  validateObjectIdParam(
+    "id",
+    "Project"
+  ),
+
   asyncHandler(
     projectController.getOne
   )
