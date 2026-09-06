@@ -194,12 +194,10 @@ export const taskRepository = {
     const task =
       await Task.findByIdAndUpdate(
         id,
-
         {
           $set:
             changes,
         },
-
         {
           new: true,
           runValidators: true,
@@ -226,5 +224,119 @@ export const taskRepository = {
       );
 
     return Boolean(task);
+  },
+
+  async aggregateOverdueByAssignee(
+    projectId
+  ) {
+    if (
+      !mongoose.isValidObjectId(
+        projectId
+      )
+    ) {
+      return [];
+    }
+
+    const results =
+      await Task.aggregate([
+        {
+          $match: {
+            projectId:
+              new mongoose.Types.ObjectId(
+                projectId
+              ),
+
+            dueDate: {
+              $ne: null,
+              $lt: new Date(),
+            },
+
+            status: {
+              $ne: "done",
+            },
+          },
+        },
+
+        {
+          $group: {
+            _id:
+              "$assigneeId",
+
+            overdueCount: {
+              $sum: 1,
+            },
+          },
+        },
+
+        {
+          $lookup: {
+            from:
+              "users",
+
+            localField:
+              "_id",
+
+            foreignField:
+              "_id",
+
+            as:
+              "assignee",
+          },
+        },
+
+        {
+          $unwind: {
+            path:
+              "$assignee",
+
+            preserveNullAndEmptyArrays:
+              true,
+          },
+        },
+
+        {
+          $project: {
+            _id: 0,
+
+            assigneeId: {
+              $convert: {
+                input:
+                  "$_id",
+
+                to:
+                  "string",
+
+                onError:
+                  null,
+
+                onNull:
+                  null,
+              },
+            },
+
+            assigneeName: {
+              $ifNull: [
+                "$assignee.name",
+                "Unassigned",
+              ],
+            },
+
+            overdueCount:
+              1,
+          },
+        },
+
+        {
+          $sort: {
+            overdueCount:
+              -1,
+
+            assigneeName:
+              1,
+          },
+        },
+      ]);
+
+    return results;
   },
 };
