@@ -1,4 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+
 import {
   Navigate,
   useParams,
@@ -15,25 +20,61 @@ import {
   updateTask,
 } from '../api/taskApi';
 
-import Board from '../components/Board';
-import ProjectMembers from '../components/ProjectMembers';
+import Board
+  from '../components/Board';
+
+import ProjectMembers
+  from '../components/ProjectMembers';
 
 import {
   useAuth,
 } from '../context/AuthContext';
 
+import {
+  cacheProject,
+  cacheProjectBoard,
+  cacheTask,
+  removeCachedTask,
+} from '../services/localProjectStore';
+
 export default function BoardPage() {
-  const { projectId } = useParams();
-  const { user } = useAuth();
+  const {
+    projectId,
+  } = useParams();
 
-  const [project, setProject] = useState(null);
-  const [tasks, setTasks] = useState([]);
+  const {
+    user,
+  } = useAuth();
 
-  const [query, setQuery] = useState('');
+  const [
+    project,
+    setProject,
+  ] = useState(null);
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [notFound, setNotFound] = useState(false);
+  const [
+    tasks,
+    setTasks,
+  ] = useState([]);
+
+  const [
+    query,
+    setQuery,
+  ] = useState('');
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
+
+  const [
+    error,
+    setError,
+  ] = useState('');
+
+  const [
+    notFound,
+    setNotFound,
+  ] = useState(false);
 
   useEffect(() => {
     async function loadBoard() {
@@ -42,17 +83,41 @@ export default function BoardPage() {
         setError('');
         setNotFound(false);
 
-        const [projectData, taskData] =
+        const [
+          projectData,
+          taskData,
+        ] =
           await Promise.all([
-            getProject(projectId),
-            getProjectTasks(projectId),
+            getProject(
+              projectId,
+            ),
+
+            getProjectTasks(
+              projectId,
+            ),
           ]);
 
-        setProject(projectData);
-        setTasks(taskData);
+        setProject(
+          projectData,
+        );
+
+        setTasks(
+          taskData,
+        );
+
+        await cacheProjectBoard(
+          user?.id,
+          projectData,
+          taskData,
+        );
       } catch (err) {
-        if (err.status === 404) {
-          setNotFound(true);
+        if (
+          err.status === 404
+        ) {
+          setNotFound(
+            true,
+          );
+
           return;
         }
 
@@ -61,28 +126,41 @@ export default function BoardPage() {
             'Unable to load project board',
         );
       } finally {
-        setLoading(false);
+        setLoading(
+          false,
+        );
       }
     }
 
     loadBoard();
-  }, [projectId]);
+  }, [
+    projectId,
+    user?.id,
+  ]);
 
-  const visibleTasks = useMemo(() => {
-    const value = query
-      .trim()
-      .toLowerCase();
+  const visibleTasks =
+    useMemo(() => {
+      const value =
+        query
+          .trim()
+          .toLowerCase();
 
-    if (!value) {
-      return tasks;
-    }
+      if (!value) {
+        return tasks;
+      }
 
-    return tasks.filter((task) =>
-      `${task.title} ${task.description} ${task.assignee}`
-        .toLowerCase()
-        .includes(value),
-    );
-  }, [query, tasks]);
+      return tasks.filter(
+        (task) =>
+          `${task.title} ${task.description} ${task.assignee}`
+            .toLowerCase()
+            .includes(
+              value,
+            ),
+      );
+    }, [
+      query,
+      tasks,
+    ]);
 
   async function handleAddTask() {
     const title =
@@ -90,7 +168,9 @@ export default function BoardPage() {
         'Task title',
       );
 
-    if (!title?.trim()) {
+    if (
+      !title?.trim()
+    ) {
       return;
     }
 
@@ -105,19 +185,35 @@ export default function BoardPage() {
       const task =
         await createTask({
           projectId,
-          title: title.trim(),
+
+          title:
+            title.trim(),
+
           description:
             description.trim(),
-          status: 'todo',
+
+          status:
+            'todo',
+
           assignee:
             user?.name ?? '',
-          priority: 'normal',
+
+          priority:
+            'normal',
         });
 
-      setTasks((current) => [
-        ...current,
+      setTasks(
+        (current) => [
+          ...current,
+          task,
+        ],
+      );
+
+      await cacheTask(
+        user?.id,
+        projectId,
         task,
-      ]);
+      );
     } catch (err) {
       setError(
         err.message ||
@@ -141,12 +237,21 @@ export default function BoardPage() {
           },
         );
 
-      setTasks((current) =>
-        current.map((task) =>
-          task.id === taskId
-            ? updated
-            : task,
-        ),
+      setTasks(
+        (current) =>
+          current.map(
+            (task) =>
+              task.id ===
+              taskId
+                ? updated
+                : task,
+          ),
+      );
+
+      await cacheTask(
+        user?.id,
+        projectId,
+        updated,
       );
     } catch (err) {
       setError(
@@ -171,13 +276,23 @@ export default function BoardPage() {
     try {
       setError('');
 
-      await deleteTask(taskId);
+      await deleteTask(
+        taskId,
+      );
 
-      setTasks((current) =>
-        current.filter(
-          (task) =>
-            task.id !== taskId,
-        ),
+      setTasks(
+        (current) =>
+          current.filter(
+            (task) =>
+              task.id !==
+              taskId,
+          ),
+      );
+
+      await removeCachedTask(
+        user?.id,
+        projectId,
+        taskId,
       );
     } catch (err) {
       setError(
@@ -185,6 +300,19 @@ export default function BoardPage() {
           'Unable to delete task',
       );
     }
+  }
+
+  function handleProjectChange(
+    updatedProject,
+  ) {
+    setProject(
+      updatedProject,
+    );
+
+    void cacheProject(
+      user?.id,
+      updatedProject,
+    );
   }
 
   if (notFound) {
@@ -246,14 +374,18 @@ export default function BoardPage() {
         <ProjectMembers
           project={project}
           currentUser={user}
-          onProjectChange={setProject}
+          onProjectChange={
+            handleProjectChange
+          }
         />
 
         <div className="mb-8 flex flex-col items-center justify-between gap-4 sm:flex-row">
 
           <button
             type="button"
-            onClick={handleAddTask}
+            onClick={
+              handleAddTask
+            }
             className="flex w-full items-center gap-2 rounded-lg border border-stone-200 bg-white px-4 py-2 font-bold text-stone-700 shadow-sm transition-all hover:border-emerald-600 hover:text-emerald-700 sm:w-auto"
           >
             <span className="text-lg">
@@ -267,7 +399,9 @@ export default function BoardPage() {
             <input
               type="text"
               value={query}
-              onChange={(event) =>
+              onChange={(
+                event
+              ) =>
                 setQuery(
                   event.target.value,
                 )
@@ -281,7 +415,9 @@ export default function BoardPage() {
 
         <main>
           <Board
-            tasks={visibleTasks}
+            tasks={
+              visibleTasks
+            }
             onStatusChange={
               handleStatusChange
             }
