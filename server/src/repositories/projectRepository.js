@@ -1,106 +1,225 @@
-import { randomUUID } from "node:crypto";
+import mongoose from "mongoose";
 
-import { projects } from "../data/projects.js";
+import {
+  Project,
+} from "../models/Project.js";
+
+function toId(value) {
+  if (value == null) {
+    return null;
+  }
+
+  return value.toString();
+}
+
+function toIso(value) {
+  if (!value) {
+    return null;
+  }
+
+  if (
+    value instanceof Date
+  ) {
+    return value.toISOString();
+  }
+
+  return value;
+}
+
+function toProject(project) {
+  if (!project) {
+    return null;
+  }
+
+  const value =
+    typeof project.toObject ===
+    "function"
+      ? project.toObject()
+      : project;
+
+  return {
+    id:
+      toId(
+        value._id ??
+          value.id
+      ),
+
+    name:
+      value.name,
+
+    description:
+      value.description ?? "",
+
+    status:
+      value.status ??
+      "Ongoing",
+
+    startedMonth:
+      value.startedMonth ?? "",
+
+    progress:
+      value.progress ?? 0,
+
+    ownerId:
+      toId(
+        value.ownerId
+      ),
+
+    memberIds:
+      (
+        value.memberIds ?? []
+      ).map(toId),
+
+    createdAt:
+      toIso(
+        value.createdAt
+      ),
+
+    updatedAt:
+      toIso(
+        value.updatedAt
+      ),
+  };
+}
 
 export const projectRepository = {
   async findAll() {
-    return projects;
+    const projects =
+      await Project.find()
+        .sort({
+          createdAt: -1,
+        })
+        .lean();
+
+    return projects.map(
+      toProject
+    );
   },
 
   async findById(id) {
-    return (
-      projects.find(
-        (project) => project.id === id
-      ) ?? null
+    if (
+      !mongoose.isValidObjectId(
+        id
+      )
+    ) {
+      return null;
+    }
+
+    const project =
+      await Project.findById(
+        id
+      ).lean();
+
+    return toProject(
+      project
     );
   },
 
   async create(data) {
-    const project = {
-      id: randomUUID(),
+    const project =
+      await Project.create({
+        name:
+          data.name,
 
-      name: data.name,
+        description:
+          data.description ??
+          "",
 
-      description:
-        data.description ?? "",
+        status:
+          data.status ??
+          "Ongoing",
 
-      status:
-        data.status ?? "Ongoing",
+        startedMonth:
+          data.startedMonth ||
+          undefined,
 
-      startedMonth:
-        data.startedMonth ??
-        new Intl.DateTimeFormat(
-          "en",
-          {
-            month: "short",
-          }
-        ).format(new Date()),
+        progress:
+          data.progress ?? 0,
 
-      progress: 0,
+        ownerId:
+          data.ownerId,
 
-      // Real registered users are stored here.
-      memberIds: [
-        data.ownerId,
-      ],
+        memberIds: [
+          data.ownerId,
+        ],
+      });
 
-      ownerId:
-        data.ownerId,
-
-      createdAt:
-        new Date().toISOString(),
-    };
-
-    projects.push(project);
-
-    return project;
+    return toProject(
+      project
+    );
   },
 
   async addMember(
     projectId,
     userId
   ) {
-    const project =
-      projects.find(
-        (item) =>
-          item.id === projectId
-      );
-
-    if (!project) {
-      return null;
-    }
-
     if (
-      !project.memberIds.includes(
+      !mongoose.isValidObjectId(
+        projectId
+      ) ||
+      !mongoose.isValidObjectId(
         userId
       )
     ) {
-      project.memberIds.push(
-        userId
-      );
+      return null;
     }
 
-    return project;
+    const project =
+      await Project.findByIdAndUpdate(
+        projectId,
+
+        {
+          $addToSet: {
+            memberIds:
+              userId,
+          },
+        },
+
+        {
+          new: true,
+          runValidators: true,
+        }
+      ).lean();
+
+    return toProject(
+      project
+    );
   },
 
   async removeMember(
     projectId,
     userId
   ) {
-    const project =
-      projects.find(
-        (item) =>
-          item.id === projectId
-      );
-
-    if (!project) {
+    if (
+      !mongoose.isValidObjectId(
+        projectId
+      ) ||
+      !mongoose.isValidObjectId(
+        userId
+      )
+    ) {
       return null;
     }
 
-    project.memberIds =
-      project.memberIds.filter(
-        (id) => id !== userId
-      );
+    const project =
+      await Project.findByIdAndUpdate(
+        projectId,
 
-    return project;
+        {
+          $pull: {
+            memberIds:
+              userId,
+          },
+        },
+
+        {
+          new: true,
+          runValidators: true,
+        }
+      ).lean();
+
+    return toProject(
+      project
+    );
   },
 };
