@@ -90,6 +90,10 @@ export async function cacheTask(
   userId,
   projectId,
   task,
+  {
+    pendingSync = false,
+    localOnly = false,
+  } = {},
 ) {
   if (
     !userId ||
@@ -110,6 +114,8 @@ export async function cacheTask(
         type: 'task',
         serverId: task.id,
         ...task,
+        pendingSync,
+        localOnly,
       },
     );
 
@@ -143,6 +149,16 @@ export async function cacheProjectTasks(
         prefix,
       );
 
+    const existingByServerId =
+      new Map(
+        existing.map(
+          (document) => [
+            document.serverId,
+            document,
+          ],
+        ),
+      );
+
     const serverTaskIds =
       new Set(
         tasks.map(
@@ -152,25 +168,32 @@ export async function cacheProjectTasks(
 
     await Promise.all(
       tasks.map(
-        (task) =>
-          putLocalDocument(
-            taskDocId(
-              userId,
-              projectId,
+        async (task) => {
+          const current =
+            existingByServerId.get(
               task.id,
-            ),
-            {
-              type: 'task',
-              serverId: task.id,
-              ...task,
-            },
-          ),
+            );
+
+          if (
+            current?.pendingSync
+          ) {
+            return;
+          }
+
+          await cacheTask(
+            userId,
+            projectId,
+            task,
+          );
+        },
       ),
     );
 
     const staleDocuments =
       existing.filter(
         (document) =>
+          !document.pendingSync &&
+          !document.localOnly &&
           !serverTaskIds.has(
             document.serverId,
           ),
