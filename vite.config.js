@@ -7,4 +7,21 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+
+  resolve: {
+    alias: {
+      events: 'events',
+    },
+  },
+
+  define: {
+    global: 'globalThis',
+  },
+
+  optimizeDeps: {
+    include: [
+      'pouchdb-browser',
+      'events',
+    ],
+  },
 })

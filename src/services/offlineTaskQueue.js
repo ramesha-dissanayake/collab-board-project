@@ -45,6 +45,52 @@ function queuePrefix(
   )}:${projectId}:`;
 }
 
+function conflictDetails(
+  error,
+) {
+  return (
+    error?.details ??
+    error?.data?.error
+      ?.details ??
+    error?.response?.error
+      ?.details ??
+    null
+  );
+}
+
+function valuesEqual(
+  first,
+  second,
+) {
+  return (
+    JSON.stringify(first) ===
+    JSON.stringify(second)
+  );
+}
+
+function canFieldMerge(
+  baseTask,
+  currentTask,
+  changes,
+) {
+  if (
+    !baseTask ||
+    !currentTask
+  ) {
+    return false;
+  }
+
+  return Object.keys(
+    changes
+  ).every(
+    (field) =>
+      valuesEqual(
+        baseTask[field],
+        currentTask[field],
+      ),
+  );
+}
+
 async function getQueueDocument(
   userId,
   projectId,
@@ -76,14 +122,23 @@ export async function queueTaskCreate(
       localTask.id,
     ),
     {
-      type: 'task-operation',
-      operation: 'create',
+      type:
+        'task-operation',
+
+      operation:
+        'create',
+
       userId,
       projectId,
-      taskId: localTask.id,
+
+      taskId:
+        localTask.id,
+
       payload,
+
       createdAt:
-        new Date().toISOString(),
+        new Date()
+          .toISOString(),
     },
   );
 }
@@ -93,6 +148,7 @@ export async function queueTaskUpdate(
   projectId,
   taskId,
   changes,
+  baseTask,
 ) {
   const existing =
     await getQueueDocument(
@@ -109,6 +165,7 @@ export async function queueTaskUpdate(
       existing._id,
       {
         ...existing,
+
         payload: {
           ...existing.payload,
           ...changes,
@@ -133,19 +190,35 @@ export async function queueTaskUpdate(
       taskId,
     ),
     {
-      type: 'task-operation',
-      operation: 'update',
+      type:
+        'task-operation',
+
+      operation:
+        'update',
+
       userId,
       projectId,
       taskId,
+
       payload: {
         ...(existing?.payload ??
           {}),
         ...changes,
       },
+
+      baseVersion:
+        existing?.baseVersion ??
+        baseTask?.version ??
+        0,
+
+      baseTask:
+        existing?.baseTask ??
+        baseTask,
+
       createdAt:
         existing?.createdAt ??
-        new Date().toISOString(),
+        new Date()
+          .toISOString(),
     },
   );
 }
@@ -183,15 +256,22 @@ export async function queueTaskDelete(
       taskId,
     ),
     {
-      type: 'task-operation',
-      operation: 'delete',
+      type:
+        'task-operation',
+
+      operation:
+        'delete',
+
       userId,
       projectId,
       taskId,
+
       payload: {},
+
       createdAt:
         existing?.createdAt ??
-        new Date().toISOString(),
+        new Date()
+          .toISOString(),
     },
   );
 
@@ -245,6 +325,29 @@ export async function getPendingTaskOperationCount(
   return operations.length;
 }
 
+export async function removePendingTaskOperation(
+  userId,
+  projectId,
+  taskId,
+) {
+  const existing =
+    await getQueueDocument(
+      userId,
+      projectId,
+      taskId,
+    );
+
+  if (!existing) {
+    return false;
+  }
+
+  await removeLocalDocument(
+    existing._id,
+  );
+
+  return true;
+}
+
 export async function syncPendingTaskOperations(
   userId,
   projectId,
@@ -286,17 +389,71 @@ export async function syncPendingTaskOperations(
         operation.operation ===
         'update'
       ) {
-        const updated =
-          await updateTask(
-            operation.taskId,
-            operation.payload,
-          );
+        try {
+          const updated =
+            await updateTask(
+              operation.taskId,
+              {
+                ...operation.payload,
 
-        await cacheTask(
-          userId,
-          projectId,
-          updated,
-        );
+                baseVersion:
+                  operation.baseVersion,
+              },
+            );
+
+          await cacheTask(
+            userId,
+            projectId,
+            updated,
+          );
+        } catch (error) {
+          if (
+            error?.status !==
+            409
+          ) {
+            throw error;
+          }
+
+          const details =
+            conflictDetails(
+              error,
+            );
+
+          const current =
+            details?.current;
+
+          if (
+            current &&
+            canFieldMerge(
+              operation.baseTask,
+              current,
+              operation.payload,
+            )
+          ) {
+            const merged =
+              await updateTask(
+                operation.taskId,
+                {
+                  ...operation.payload,
+
+                  baseVersion:
+                    current.version,
+                },
+              );
+
+            await cacheTask(
+              userId,
+              projectId,
+              merged,
+            );
+          } else {
+            return {
+              completed: false,
+              error,
+              operation,
+            };
+          }
+        }
       }
 
       if (
@@ -321,6 +478,7 @@ export async function syncPendingTaskOperations(
       return {
         completed: false,
         error,
+        operation,
       };
     }
   }
@@ -328,5 +486,6 @@ export async function syncPendingTaskOperations(
   return {
     completed: true,
     error: null,
+    operation: null,
   };
 }

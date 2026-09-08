@@ -10,13 +10,16 @@ export class AppError extends Error {
     this.status = status;
     this.code = code;
     this.details = details;
+    this.isOperational = true;
   }
 }
 
 export class NotFoundError extends AppError {
-  constructor(resource = "Resource") {
+  constructor(
+    what = "Resource"
+  ) {
     super(
-      `${resource} not found`,
+      `${what} not found`,
       404,
       "NOT_FOUND"
     );
@@ -24,11 +27,9 @@ export class NotFoundError extends AppError {
 }
 
 export class ForbiddenError extends AppError {
-  constructor(
-    message = "You may not access this resource"
-  ) {
+  constructor() {
     super(
-      message,
+      "You may not do that",
       403,
       "FORBIDDEN"
     );
@@ -37,12 +38,14 @@ export class ForbiddenError extends AppError {
 
 export class ConflictError extends AppError {
   constructor(
-    message = "Resource already exists"
+    message = "Conflict",
+    details
   ) {
     super(
       message,
       409,
-      "CONFLICT"
+      "CONFLICT",
+      details
     );
   }
 }

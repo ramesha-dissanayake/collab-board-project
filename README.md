@@ -1,149 +1,119 @@
 # CollabBoard
 
-CollabBoard is a collaborative Kanban-style project and task management application developed as a progressive full-stack group project.
+CollabBoard is a collaborative Kanban-style project and task management application built as a progressive full-stack group project.
 
-Users can create an account, sign in, view their profile and projects, open a project-specific board, and manage tasks across three workflow stages:
-
-- **To Do**
-- **Doing**
-- **Done**
-
-The application is being developed incrementally across multiple milestones.
+Authenticated users can create projects, add registered members, manage tasks across a Kanban workflow, work with persistent MongoDB data, and continue selected board operations during temporary network loss.
 
 ---
 
-## Milestone Status
+## Current Milestones
 
-### Milestone 1 — Static Front-End Skeleton
+### Milestone 1 — Frontend Skeleton
 
-**Status: Completed**
+**Completed**
 
-Milestone 1 established the React frontend, routing, reusable components, profile page, project dashboard, project-specific Kanban boards, mock data, and the initial UI structure.
+Built the React interface, routing, profile page, project dashboard, reusable components, and Kanban board.
 
-### Milestone 2 — Working REST API with Mock Data
+### Milestone 2 — REST API Integration
 
-**Status: Completed**
+**Completed**
 
-Milestone 2 introduces a Node.js and Express backend and connects the React frontend to live REST API endpoints.
+Added the Express backend, JWT authentication, validation, protected routes, project APIs, task CRUD operations, and frontend API integration.
 
-The application now includes real authentication, protected routes, server-side validation, project endpoints, and full task CRUD operations.
+### Milestone 3 — Persistence & Offline Support
+
+**Completed**
+
+Milestone 3 replaces temporary server data with MongoDB and introduces browser-side persistence.
+
+Main additions include:
+
+- MongoDB persistence through Mongoose
+- MongoDB Atlas cloud database integration
+- Persistent users, projects, memberships, and tasks
+- MongoDB indexes and aggregation
+- Repeatable development seed data
+- PouchDB / IndexedDB browser caching
+- Offline board loading
+- Queued offline task changes
+- Reconnection synchronization
+- Optimistic concurrency for task updates
+- `409 Conflict` handling for stale edits
 
 ---
 
-## Assignment 02 Features
+## Main Features
 
 ### Authentication
 
-- User registration
-- User login
-- Password hashing using `bcryptjs`
+- User registration and login
+- Password hashing with `bcryptjs`
 - JWT authentication
 - Protected API routes
 - Current authenticated user endpoint
-- Frontend authentication state
-- Automatic Bearer token handling
 
 ### Projects
 
+- Create projects
 - View accessible projects
-- View a single project
-- Create projects through the API
-- Open a project-specific board from the profile page
+- Project owner and member relationships
+- Search registered users by email
+- Add and remove project members
+- Member-specific project dashboards
 
 ### Tasks
 
-- View tasks belonging to a project
 - Create tasks
-- Update task workflow status
-- Delete tasks
-- Search tasks from the frontend
-- Display tasks under:
+- View project tasks
+- Move tasks between:
   - To Do
   - Doing
   - Done
+- Delete tasks
+- Search tasks
+- Persist tasks in MongoDB
+- Track task versions for concurrent editing
 
-### Validation and Error Handling
+### Offline Support
 
-- Zod server-side validation
-- Centralized Express error handling
-- Consistent JSON error responses
-- Authentication errors
-- Validation errors
-- Not-found errors
+Boards opened while online are cached in PouchDB using IndexedDB.
 
-### Frontend Integration
+When the connection is unavailable:
 
-The React frontend no longer reads project-board tasks directly from frontend mock data.
+- cached boards can still be displayed
+- task creation can be queued locally
+- task status changes can be queued locally
+- task deletion can be queued locally
+- queued changes survive browser refresh
+- pending changes synchronize when connectivity returns
 
-Instead, it communicates with the Express API through a centralized API client.
+### Concurrent Edit Handling
 
-```text
-React Components
-       |
-       v
-src/api
-       |
-       v
-HTTP Requests
-       |
-       v
-Express REST API
-       |
-       v
-Controller
-       |
-       v
-Service
-       |
-       v
-Repository
-       |
-       v
-In-Memory Mock Data
-```
+Each task contains a numeric `version`.
 
----
-
-## Application Flow
+Task updates send a `baseVersion` to the API. The server updates the task only when the stored version still matches.
 
 ```text
-Landing Page
-     |
-     v
-Login / Create Account
-     |
-     v
-Profile Page
-     |
-     v
-Project List
-     |
-     v
-Select Project
-     |
-     v
-Project Board
-     |
-     +---- To Do
-     |
-     +---- Doing
-     |
-     +---- Done
+Client version = 2
+Server version = 2
+        ↓
+Update succeeds
+        ↓
+Version becomes 3
+````
+
+If another user has already modified the task:
+
+```text
+Client version = 2
+Server version = 3
+        ↓
+409 Conflict
 ```
 
-Protected pages require a valid authenticated session.
+The client can then use the latest server version or deliberately reapply the local change.
 
----
-
-## Frontend Routes
-
-| Route | Purpose |
-| --- | --- |
-| `/` | Landing page |
-| `/login` | Login and account registration |
-| `/profile` | Authenticated user profile and projects |
-| `/projects/:projectId/board` | Selected project's Kanban board |
-| `/board` | Redirects to `/profile` |
+This prevents silent lost updates.
 
 ---
 
@@ -151,53 +121,67 @@ Protected pages require a valid authenticated session.
 
 ### Frontend
 
-- React
-- Vite
-- JavaScript
-- React Router DOM
-- Tailwind CSS
+* React
+* Vite
+* React Router
+* JavaScript
+* Tailwind CSS
+* PouchDB
+* IndexedDB
 
 ### Backend
 
-- Node.js
-- Express
-- JSON Web Token (`jsonwebtoken`)
-- `bcryptjs`
-- Zod
-- CORS
-- dotenv
+* Node.js
+* Express
+* MongoDB
+* MongoDB Atlas
+* Mongoose
+* JWT
+* bcryptjs
+* Zod
+* CORS
+* dotenv
 
-### Development
+### Development Tools
 
-- Git
-- GitHub
-- npm
-- ESLint
-- Postman
+* Git / GitHub
+* npm
+* ESLint
+* Postman
+* MongoDB Atlas Data Explorer
+* MongoDB Compass
+* mongosh
 
 ---
 
-## Backend Architecture
-
-The Express backend follows a layered structure.
+## Architecture
 
 ```text
-Route
-  |
-  v
-Controller
-  |
-  v
-Service
-  |
-  v
-Repository
-  |
-  v
-In-Memory Data
+React Frontend
+      |
+      +------ PouchDB / IndexedDB
+      |           |
+      |       Local Cache
+      |       Offline Queue
+      |
+      v
+REST API
+      |
+      v
+Controllers
+      |
+      v
+Services
+      |
+      v
+Repositories
+      |
+      v
+Mongoose
+      |
+      v
+MongoDB Atlas
 ```
-
-HTTP-specific objects such as `req` and `res` are handled at the controller level, while business logic is kept inside services.
 
 ---
 
@@ -206,50 +190,34 @@ HTTP-specific objects such as `req` and `res` are handled at the controller leve
 ```text
 collab-board-project/
 |
-├── docs/
-│   └── postman/
-│       └── CollabBoard-M2.postman_collection.json
-|
 ├── src/
 │   ├── api/
-│   │   ├── authApi.js
-│   │   ├── client.js
-│   │   ├── projectApi.js
-│   │   └── taskApi.js
-│   │
 │   ├── components/
-│   │   ├── profile/
-│   │   ├── Board.jsx
-│   │   ├── Column.jsx
-│   │   ├── Navbar.jsx
-│   │   └── TaskCard.jsx
-│   │
 │   ├── context/
-│   │   └── AuthContext.jsx
-│   │
-│   ├── data/
+│   ├── db/
 │   ├── pages/
+│   ├── services/
 │   ├── App.jsx
-│   ├── index.css
 │   └── main.jsx
 │
 ├── server/
 │   ├── src/
 │   │   ├── controllers/
-│   │   ├── data/
+│   │   ├── db/
 │   │   ├── middleware/
+│   │   ├── models/
 │   │   ├── repositories/
 │   │   ├── routes/
 │   │   ├── schemas/
+│   │   ├── scripts/
 │   │   ├── services/
-│   │   ├── utils/
-│   │   ├── app.js
-│   │   ├── config.js
-│   │   └── server.js
+│   │   └── utils/
 │   │
 │   ├── .env.example
 │   └── package.json
 │
+├── docs/
+├── postman/
 ├── .env.example
 ├── package.json
 └── README.md
@@ -263,9 +231,18 @@ collab-board-project/
 
 Install:
 
-- Node.js
-- npm
-- Git
+* Node.js
+* npm
+* Git
+
+Required external service:
+
+* MongoDB Atlas account with an M0 Free cluster
+
+Recommended:
+
+* Postman
+* MongoDB Compass
 
 ---
 
@@ -278,11 +255,25 @@ cd collab-board-project
 
 ---
 
-## 2. Install Frontend Dependencies
+## 2. Install Dependencies
+
+Frontend:
 
 ```bash
 npm install
 ```
+
+Backend:
+
+```bash
+cd server
+npm install
+cd ..
+```
+
+---
+
+## 3. Configure Environment Variables
 
 Create a root `.env` file:
 
@@ -290,13 +281,88 @@ Create a root `.env` file:
 VITE_API_URL=http://localhost:4000
 ```
 
-Start the frontend:
+Create `server/.env`:
+
+```env
+PORT=4000
+CLIENT_ORIGIN=http://localhost:5173
+JWT_SECRET=replace-with-your-own-secret
+MONGODB_URI=your-mongodb-atlas-connection-string
+```
+
+`MONGODB_URI` should contain the MongoDB Atlas connection string for the `collabboard` database.
+
+Example structure:
+
+```text
+mongodb+srv://<username>:<password>@<cluster-host>/collabboard
+```
+
+or a standard non-SRV Atlas connection string.
+
+Real `.env` files are ignored by Git and must not be committed.
+
+Database credentials and JWT secrets must never be added to the repository.
+
+---
+
+## 4. Seed the Development Database
+
+From the `server` folder:
+
+```bash
+cd server
+npm run seed
+```
+
+The seed script creates sample users, projects, memberships, and tasks for development and testing.
+
+Example test account:
+
+```text
+maya.seed@example.com
+password123
+```
+
+The seed script clears the configured development database before recreating the sample records.
+
+> Do not run the seed script against a production database containing real data.
+
+---
+
+## 5. Start the Backend
+
+From the `server` folder:
 
 ```bash
 npm run dev
 ```
 
-The Vite frontend normally runs at:
+Expected backend address:
+
+```text
+http://localhost:4000
+```
+
+Health endpoint:
+
+```text
+GET /api/health
+```
+
+A successful startup should confirm that MongoDB is connected.
+
+---
+
+## 6. Start the Frontend
+
+Open another terminal at the project root:
+
+```bash
+npm run dev
+```
+
+Frontend:
 
 ```text
 http://localhost:5173
@@ -304,318 +370,232 @@ http://localhost:5173
 
 ---
 
-## 3. Install Backend Dependencies
-
-Open another terminal:
-
-```bash
-cd server
-npm install
-```
-
-Create:
-
-```text
-server/.env
-```
-
-using `server/.env.example` as a template:
-
-```env
-PORT=4000
-CLIENT_ORIGIN=http://localhost:5173
-JWT_SECRET=replace-with-your-own-secret
-```
-
-Start the Express server:
-
-```bash
-npm run dev
-```
-
-The backend runs at:
-
-```text
-http://localhost:4000
-```
-
----
-
-## API Contract
+## API Overview
 
 ### Authentication
 
-| Method | Endpoint | Description | Auth | Success |
-| --- | --- | --- | --- | --- |
-| POST | `/api/auth/register` | Register a user | No | 201 |
-| POST | `/api/auth/login` | Login and receive JWT | No | 200 |
-| GET | `/api/auth/me` | Get current user | Yes | 200 |
+| Method | Endpoint             | Purpose                    |
+| ------ | -------------------- | -------------------------- |
+| POST   | `/api/auth/register` | Register user              |
+| POST   | `/api/auth/login`    | Login                      |
+| GET    | `/api/auth/me`       | Current authenticated user |
 
 ### Projects
 
-| Method | Endpoint | Description | Auth | Success |
-| --- | --- | --- | --- | --- |
-| GET | `/api/projects` | List accessible projects | Yes | 200 |
-| POST | `/api/projects` | Create a project | Yes | 201 |
-| GET | `/api/projects/:id` | Get a project | Yes | 200 |
-| GET | `/api/projects/:projectId/tasks` | Get project tasks | Yes | 200 |
+| Method | Endpoint                                 | Purpose                         |
+| ------ | ---------------------------------------- | ------------------------------- |
+| GET    | `/api/projects`                          | Get accessible projects         |
+| POST   | `/api/projects`                          | Create project                  |
+| GET    | `/api/projects/:id`                      | Get project                     |
+| GET    | `/api/projects/:id/member-candidate`     | Find registered member by email |
+| POST   | `/api/projects/:id/members`              | Add project member              |
+| DELETE | `/api/projects/:id/members/:memberId`    | Remove project member           |
+| GET    | `/api/projects/:projectId/tasks`         | Get project tasks               |
+| GET    | `/api/projects/:projectId/stats/overdue` | Get overdue task statistics     |
 
 ### Tasks
 
-| Method | Endpoint | Description | Auth | Success |
-| --- | --- | --- | --- | --- |
-| POST | `/api/tasks` | Create a task | Yes | 201 |
-| PATCH | `/api/tasks/:id` | Update a task | Yes | 200 |
-| DELETE | `/api/tasks/:id` | Delete a task | Yes | 204 |
+| Method | Endpoint         | Purpose     |
+| ------ | ---------------- | ----------- |
+| POST   | `/api/tasks`     | Create task |
+| PATCH  | `/api/tasks/:id` | Update task |
+| DELETE | `/api/tasks/:id` | Delete task |
 
----
-
-## Authentication
-
-After a successful login, the backend returns a JSON Web Token.
-
-The frontend stores the token and includes it in protected requests using:
+Protected endpoints require:
 
 ```text
 Authorization: Bearer <token>
 ```
 
-Passwords are never stored as plain text. They are hashed using `bcryptjs`.
-
-The JWT secret is stored in:
-
-```text
-server/.env
-```
-
-The real `.env` files are ignored by Git.
-
----
-
-## Validation and Error Responses
-
-Request data is validated on the server using Zod.
-
-Example validation error:
+Task updates also include the current task version:
 
 ```json
 {
-  "error": {
-    "message": "Validation failed",
-    "code": "VALIDATION_ERROR",
-    "details": [
-      {
-        "field": "title",
-        "message": "Title must be at least 3 characters"
-      }
-    ]
-  }
+  "status": "doing",
+  "baseVersion": 2
 }
 ```
 
-Common HTTP responses include:
+A stale version returns:
 
-| Status | Meaning |
-| --- | --- |
-| 200 | Successful request |
-| 201 | Resource created |
-| 204 | Resource deleted successfully |
-| 400 | Validation or request error |
-| 401 | Authentication required or invalid |
-| 403 | Access forbidden |
-| 404 | Resource or route not found |
-| 409 | Duplicate resource |
-| 500 | Unexpected server error |
+```text
+409 Conflict
+```
 
 ---
 
 ## Postman API Collection
 
-The Assignment 02 Postman collection is included at:
+A Postman collection is included in the repository for testing the REST API.
+
+Example location:
 
 ```text
-docs/postman/CollabBoard-M2.postman_collection.json
+postman/CollabBoard_API.postman_collection.json
 ```
 
-Import the file into Postman to test the REST API.
+The collection contains requests for:
 
-The collection includes requests for:
+* Register
+* Login
+* Current User
+* Get Projects
+* Get One Project
+* Get Project Tasks
+* Create Task
+* Update Task
+* Delete Task
+* Overdue Task Statistics
 
-- Registration
-- Login
-- Current authenticated user
-- Project retrieval
-- Project creation
-- Project task retrieval
-- Task creation
-- Task updating
-- Task deletion
-- Validation errors
-- Authentication errors
-- Unknown routes
+Protected requests require a valid JWT token generated by the Login endpoint.
 
-Because Milestone 2 uses server-side in-memory data, run **Register User** and then **Login User** after restarting the Express server.
+---
+
+## Database Design
+
+The Assignment 03 version of CollabBoard uses a MongoDB Atlas M0 Free cluster for persistent cloud database storage.
+
+Mongoose is used by the Express backend to communicate with MongoDB Atlas.
+
+MongoDB uses three main collections:
+
+```text
+users
+projects
+tasks
+```
+
+Relationships are stored using MongoDB ObjectId references.
+
+```text
+User
+  ↑
+  |
+Project
+  ├── ownerId
+  └── memberIds[]
+
+Task
+  ├── projectId → Project
+  └── assigneeId → User
+```
+
+Tasks also contain a `version` field for optimistic concurrency.
+
+---
+
+## MongoDB Performance
+
+Task indexes support common operations such as:
+
+* project + status + position
+* project + due date
+* assignee + status
+* task title/description text search
+
+The project also includes an aggregation endpoint that reports incomplete overdue tasks grouped by assignee.
+
+---
+
+## Client Persistence
+
+PouchDB stores project and task copies locally in IndexedDB.
+
+Typical local document IDs follow prefixes such as:
+
+```text
+project:<userId>:<projectId>
+
+task:<userId>:<projectId>:<taskId>
+
+queue:<userId>:<projectId>:<taskId>
+```
+
+Queue documents represent task changes waiting to synchronize with the API.
 
 ---
 
 ## Available Scripts
 
-### Frontend Development Server
+Frontend:
 
 ```bash
 npm run dev
-```
-
-### Frontend Production Build
-
-```bash
 npm run build
-```
-
-### ESLint
-
-```bash
 npm run lint
 ```
 
-### Backend Development Server
+Backend:
 
 ```bash
 cd server
 npm run dev
+npm run seed
 ```
 
 ---
 
-## Data Persistence in Milestone 2
+## Verification
 
-Milestone 2 intentionally uses in-memory mock data on the backend.
-
-This means runtime changes are reset when the Express server restarts.
-
-For example:
-
-- Registered users are reset
-- Newly created projects are reset
-- Created or modified tasks are reset
-
-Persistent MongoDB storage will be introduced in the database milestone.
-
-Profile details such as age, description and profile-image information can still be stored locally in the browser using `localStorage`.
-
----
-
-## Testing and Verification
-
-The Milestone 2 implementation has been manually verified using the browser, PowerShell HTTP requests and Postman.
-
-The following flows are supported:
-
-```text
-Register
-   ↓
-Login
-   ↓
-JWT Authentication
-   ↓
-Profile
-   ↓
-Load Projects
-   ↓
-Open Project Board
-   ↓
-Create Task
-   ↓
-Update Task
-   ↓
-Delete Task
-```
-
-The project is also checked using:
+Before merging milestone changes, run:
 
 ```bash
 npm run lint
 npm run build
+```
+
+The main Milestone 3 flow supports:
+
+```text
+Register / Login
+        ↓
+Create Project
+        ↓
+Add Members
+        ↓
+Create / Update / Delete Tasks
+        ↓
+MongoDB Atlas Persistence
+        ↓
+PouchDB Cache
+        ↓
+Offline Task Changes
+        ↓
+Reconnect & Sync
+        ↓
+Conflict Detection
 ```
 
 ---
 
 ## Git Workflow
 
-Development is completed using feature branches and pull requests rather than making development changes directly on `main`.
+Development uses feature branches and pull requests.
 
 ```text
-Feature Branch
-      |
-      v
-Commits
-      |
-      v
-Pull Request
-      |
-      v
-Review / Merge
-      |
-      v
 main
+ ↑
+Pull Request
+ ↑
+Feature Branch
 ```
 
-Assignment submission versions are identified using Git tags.
-
-Final Milestone 2 submission tag:
-
-```text
-Assignment-02
-```
+Normal development changes should not be committed directly to `main`.
 
 ---
 
-## Known Limitations
+## Current Limitations
 
-The following features are outside the scope of Milestone 2:
-
-- MongoDB persistence
-- Mongoose models
-- Offline synchronization
-- Automated client/server test suites
-- Socket.io real-time updates
-- Concurrent edit detection
-- Docker deployment
-- Production deployment
-
-These features will be introduced progressively in later milestones.
-
----
-
-## Future Development
-
-The next stages will extend CollabBoard with:
-
-```text
-MongoDB + Mongoose
-        ↓
-Persistent Data
-        ↓
-Client-side Caching
-        ↓
-Automated Testing
-        ↓
-GitHub Actions CI
-        ↓
-Socket.io Real-Time Updates
-        ↓
-Concurrent Edit Handling
-        ↓
-Docker
-        ↓
-Deployment
-```
+* Project creation and project member management require connectivity.
+* Offline support currently focuses on board/task operations.
+* Optimistic concurrency currently protects task updates.
+* Task deletion does not currently use version-based conflict detection.
+* Real-time Socket.io synchronization is planned for a later milestone.
+* Docker and production deployment are planned for later milestones.
 
 ---
 
 ## Repository
-
-GitHub:
 
 ```text
 https://github.com/ramesha-dissanayake/collab-board-project
@@ -623,6 +603,31 @@ https://github.com/ramesha-dissanayake/collab-board-project
 
 ---
 
+## Assignment 03
+
+**Assignment 03 — Working Full Stack Application**
+
+This version demonstrates:
+
+* React frontend
+* Node.js / Express backend
+* MongoDB Atlas cloud database
+* Mongoose persistence
+* JWT authentication
+* REST API integration
+* Postman API testing
+* Browser-side PouchDB caching
+* Offline task synchronization
+* Optimistic concurrency handling
+
+The submitted Git tag for this version is:
+
+```text
+Assignment-03
+```
+
+---
+
 ## Project Goal
 
-The goal of CollabBoard is to provide a full-stack collaborative task management application where authenticated users can work with projects, manage tasks through a Kanban workflow, and progressively gain persistent and real-time collaboration capabilities as later milestones are completed.
+CollabBoard demonstrates the progressive development of a collaborative full-stack application, moving from a static React interface to REST APIs, persistent MongoDB storage, offline-capable client persistence, concurrency handling, testing, real-time collaboration, and deployment.
