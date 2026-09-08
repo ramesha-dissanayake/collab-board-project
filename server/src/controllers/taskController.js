@@ -67,10 +67,16 @@ export async function update(
   req,
   res
 ) {
+  const {
+    baseVersion,
+    ...changes
+  } = req.body;
+
   const task =
     await taskService.updateTask(
       req.params.id,
-      req.body,
+      changes,
+      baseVersion,
       req.user.id
     );
 

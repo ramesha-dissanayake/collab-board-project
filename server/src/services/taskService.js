@@ -7,6 +7,7 @@ import {
 } from "./projectService.js";
 
 import {
+  ConflictError,
   NotFoundError,
 } from "../utils/AppError.js";
 
@@ -71,37 +72,56 @@ export async function createTask(
 export async function updateTask(
   taskId,
   changes,
+  baseVersion,
   userId
 ) {
-  const task =
+  const existing =
     await taskRepository.findById(
       taskId
     );
 
-  if (!task) {
+  if (!existing) {
     throw new NotFoundError(
       "Task"
     );
   }
 
   await ensureProjectAccess(
-    task.projectId,
+    existing.projectId,
     userId
   );
 
   const updated =
-    await taskRepository.update(
-      taskId,
-      changes
+    await taskRepository
+      .updateWithVersion(
+        taskId,
+        changes,
+        baseVersion
+      );
+
+  if (updated) {
+    return updated;
+  }
+
+  const current =
+    await taskRepository.findById(
+      taskId
     );
 
-  if (!updated) {
+  if (!current) {
     throw new NotFoundError(
       "Task"
     );
   }
 
-  return updated;
+  throw new ConflictError(
+    "Task was modified by someone else",
+    {
+      current,
+      yourVersion:
+        baseVersion,
+    }
+  );
 }
 
 export async function deleteTask(

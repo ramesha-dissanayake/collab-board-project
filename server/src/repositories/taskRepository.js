@@ -179,9 +179,10 @@ export const taskRepository = {
     );
   },
 
-  async update(
+  async updateWithVersion(
     id,
-    changes
+    changes,
+    baseVersion
   ) {
     if (
       !mongoose.isValidObjectId(
@@ -192,12 +193,22 @@ export const taskRepository = {
     }
 
     const task =
-      await Task.findByIdAndUpdate(
-        id,
+      await Task.findOneAndUpdate(
+        {
+          _id: id,
+          version:
+            baseVersion,
+        },
+
         {
           $set:
             changes,
+
+          $inc: {
+            version: 1,
+          },
         },
+
         {
           new: true,
           runValidators: true,

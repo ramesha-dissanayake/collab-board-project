@@ -30,6 +30,9 @@ import ConnectionStatus
 import ProjectMembers
   from '../components/ProjectMembers';
 
+import TaskConflictNotice
+  from '../components/TaskConflictNotice';
+
 import {
   useAuth,
 } from '../context/AuthContext';
@@ -49,6 +52,7 @@ import {
   queueTaskCreate,
   queueTaskDelete,
   queueTaskUpdate,
+  removePendingTaskOperation,
   syncPendingTaskOperations,
 } from '../services/offlineTaskQueue';
 
@@ -61,6 +65,52 @@ function isNetworkError(
   );
 }
 
+function getConflictDetails(
+  error,
+) {
+  return (
+    error?.details ??
+    error?.data?.error
+      ?.details ??
+    error?.response?.error
+      ?.details ??
+    null
+  );
+}
+
+function valuesEqual(
+  first,
+  second,
+) {
+  return (
+    JSON.stringify(first) ===
+    JSON.stringify(second)
+  );
+}
+
+function canFieldMerge(
+  baseTask,
+  currentTask,
+  changes,
+) {
+  if (
+    !baseTask ||
+    !currentTask
+  ) {
+    return false;
+  }
+
+  return Object.keys(
+    changes,
+  ).every(
+    (field) =>
+      valuesEqual(
+        baseTask[field],
+        currentTask[field],
+      ),
+  );
+}
+
 export default function BoardPage() {
   const {
     projectId,
@@ -69,6 +119,9 @@ export default function BoardPage() {
   const {
     user,
   } = useAuth();
+
+  const userId =
+    user?.id;
 
   const [
     project,
@@ -101,6 +154,11 @@ export default function BoardPage() {
   ] = useState(false);
 
   const [
+    conflict,
+    setConflict,
+  ] = useState(null);
+
+  const [
     connectionStatus,
     setConnectionStatus,
   ] = useState(
@@ -118,7 +176,7 @@ export default function BoardPage() {
     useCallback(
       async () => {
         if (
-          !user?.id ||
+          !userId ||
           !projectId
         ) {
           setPendingCount(0);
@@ -128,7 +186,7 @@ export default function BoardPage() {
 
         const count =
           await getPendingTaskOperationCount(
-            user.id,
+            userId,
             projectId,
           );
 
@@ -138,7 +196,7 @@ export default function BoardPage() {
       },
       [
         projectId,
-        user?.id,
+        userId,
       ],
     );
 
@@ -168,14 +226,144 @@ export default function BoardPage() {
         );
 
         await cacheProjectBoard(
-          user?.id,
+          userId,
           projectData,
           taskData,
         );
       },
       [
         projectId,
-        user?.id,
+        userId,
+      ],
+    );
+
+  const showConflict =
+    useCallback(
+      async (
+        updateError,
+        operation = null,
+        fallbackTask = null,
+        fallbackChanges = {},
+      ) => {
+        const details =
+          getConflictDetails(
+            updateError,
+          );
+
+        const current =
+          details?.current;
+
+        if (!current) {
+          setError(
+            'A task conflict was detected, but the latest task could not be loaded.',
+          );
+
+          return;
+        }
+
+        const changes =
+          operation?.payload ??
+          fallbackChanges;
+
+        const baseTask =
+          operation?.baseTask ??
+          fallbackTask;
+
+        if (
+          canFieldMerge(
+            baseTask,
+            current,
+            changes,
+          )
+        ) {
+          try {
+            const merged =
+              await updateTask(
+                current.id,
+                {
+                  ...changes,
+
+                  baseVersion:
+                    current.version,
+                },
+              );
+
+            setTasks(
+              (items) =>
+                items.map(
+                  (item) =>
+                    item.id ===
+                    merged.id
+                      ? merged
+                      : item,
+                ),
+            );
+
+            await cacheTask(
+              userId,
+              projectId,
+              merged,
+            );
+
+            if (operation) {
+              await removePendingTaskOperation(
+                userId,
+                projectId,
+                operation.taskId,
+              );
+            }
+
+            await refreshPendingCount();
+
+            return;
+          } catch {
+            // If the automatic merge also races,
+            // show the conflict normally.
+          }
+        }
+
+        setConflict({
+          taskId:
+            current.id,
+
+          current,
+
+          changes,
+
+          baseTask,
+
+          yourVersion:
+            details?.yourVersion ??
+            operation?.baseVersion ??
+            fallbackTask?.version ??
+            null,
+
+          queuedTaskId:
+            operation?.taskId ??
+            null,
+        });
+
+        setTasks(
+          (items) =>
+            items.map(
+              (item) =>
+                item.id ===
+                current.id
+                  ? current
+                  : item,
+            ),
+        );
+
+        await cacheTask(
+          userId,
+          projectId,
+          current,
+        );
+      },
+      [
+        projectId,
+        refreshPendingCount,
+        userId,
       ],
     );
 
@@ -183,7 +371,7 @@ export default function BoardPage() {
     useCallback(
       async () => {
         if (
-          !user?.id ||
+          !userId ||
           !projectId
         ) {
           return;
@@ -197,33 +385,48 @@ export default function BoardPage() {
 
         const syncResult =
           await syncPendingTaskOperations(
-            user.id,
+            userId,
             projectId,
           );
 
         if (
-          !syncResult.completed &&
-          isNetworkError(
-            syncResult.error,
-          )
-        ) {
-          setConnectionStatus(
-            'offline',
-          );
-
-          await refreshPendingCount();
-
-          return;
-        }
-
-        if (
           !syncResult.completed
         ) {
-          setError(
+          if (
+            isNetworkError(
+              syncResult.error,
+            )
+          ) {
+            setConnectionStatus(
+              'offline',
+            );
+
+            await refreshPendingCount();
+
+            return;
+          }
+
+          if (
             syncResult.error
-              ?.status === 409
-              ? 'A local change could not sync because the server version has changed.'
-              : 'Some local changes could not be synchronized yet.',
+              ?.status ===
+            409
+          ) {
+            await showConflict(
+              syncResult.error,
+              syncResult.operation,
+            );
+
+            setConnectionStatus(
+              'online',
+            );
+
+            await refreshPendingCount();
+
+            return;
+          }
+
+          setError(
+            'Some local changes could not be synchronized yet.',
           );
         }
 
@@ -239,7 +442,7 @@ export default function BoardPage() {
             404
           ) {
             await clearCachedProject(
-              user.id,
+              userId,
               projectId,
             );
 
@@ -272,7 +475,8 @@ export default function BoardPage() {
         projectId,
         refreshFromServer,
         refreshPendingCount,
-        user?.id,
+        showConflict,
+        userId,
       ],
     );
 
@@ -292,12 +496,12 @@ export default function BoardPage() {
         ] =
           await Promise.all([
             getCachedProject(
-              user?.id,
+              userId,
               projectId,
             ),
 
             getCachedProjectTasks(
-              user?.id,
+              userId,
               projectId,
             ),
           ]);
@@ -315,9 +519,7 @@ export default function BoardPage() {
             cachedTasks,
           );
 
-          setLoading(
-            false,
-          );
+          setLoading(false);
         }
 
         await refreshPendingCount();
@@ -355,7 +557,7 @@ export default function BoardPage() {
     projectId,
     refreshPendingCount,
     syncAndRefresh,
-    user?.id,
+    userId,
   ]);
 
   useEffect(() => {
@@ -436,7 +638,7 @@ export default function BoardPage() {
       ...payload,
 
       assigneeId:
-        user?.id ?? null,
+        userId ?? null,
 
       position:
         payload.position ?? 0,
@@ -458,7 +660,7 @@ export default function BoardPage() {
     );
 
     await cacheTask(
-      user?.id,
+      userId,
       projectId,
       localTask,
       {
@@ -468,7 +670,7 @@ export default function BoardPage() {
     );
 
     await queueTaskCreate(
-      user?.id,
+      userId,
       projectId,
       localTask,
       payload,
@@ -545,7 +747,7 @@ export default function BoardPage() {
       );
 
       await cacheTask(
-        user?.id,
+        userId,
         projectId,
         task,
       );
@@ -576,8 +778,10 @@ export default function BoardPage() {
     const updated = {
       ...task,
       ...changes,
+
       updatedAt:
         new Date().toISOString(),
+
       pendingSync: true,
     };
 
@@ -593,11 +797,12 @@ export default function BoardPage() {
     );
 
     await cacheTask(
-      user?.id,
+      userId,
       projectId,
       updated,
       {
         pendingSync: true,
+
         localOnly:
           Boolean(
             task.localOnly,
@@ -606,10 +811,11 @@ export default function BoardPage() {
     );
 
     await queueTaskUpdate(
-      user?.id,
+      userId,
       projectId,
       task.id,
       changes,
+      task,
     );
 
     setConnectionStatus(
@@ -633,15 +839,17 @@ export default function BoardPage() {
       return;
     }
 
+    const changes = {
+      status,
+    };
+
     if (
       !navigator.onLine ||
       task.localOnly
     ) {
       await updateTaskOffline(
         task,
-        {
-          status,
-        },
+        changes,
       );
 
       return;
@@ -649,12 +857,16 @@ export default function BoardPage() {
 
     try {
       setError('');
+      setConflict(null);
 
       const updated =
         await updateTask(
           taskId,
           {
-            status,
+            ...changes,
+
+            baseVersion:
+              task.version,
           },
         );
 
@@ -670,7 +882,7 @@ export default function BoardPage() {
       );
 
       await cacheTask(
-        user?.id,
+        userId,
         projectId,
         updated,
       );
@@ -682,9 +894,21 @@ export default function BoardPage() {
       ) {
         await updateTaskOffline(
           task,
-          {
-            status,
-          },
+          changes,
+        );
+
+        return;
+      }
+
+      if (
+        updateError.status ===
+        409
+      ) {
+        await showConflict(
+          updateError,
+          null,
+          task,
+          changes,
         );
 
         return;
@@ -701,7 +925,7 @@ export default function BoardPage() {
     task,
   ) {
     await queueTaskDelete(
-      user?.id,
+      userId,
       projectId,
       task.id,
     );
@@ -710,12 +934,13 @@ export default function BoardPage() {
       (current) =>
         current.filter(
           (item) =>
-            item.id !== task.id,
+            item.id !==
+            task.id,
         ),
     );
 
     await removeCachedTask(
-      user?.id,
+      userId,
       projectId,
       task.id,
     );
@@ -777,7 +1002,7 @@ export default function BoardPage() {
       );
 
       await removeCachedTask(
-        user?.id,
+        userId,
         projectId,
         taskId,
       );
@@ -801,6 +1026,115 @@ export default function BoardPage() {
     }
   }
 
+  async function handleUseServerVersion() {
+    if (!conflict) {
+      return;
+    }
+
+    setTasks(
+      (current) =>
+        current.map(
+          (task) =>
+            task.id ===
+            conflict.current.id
+              ? conflict.current
+              : task,
+        ),
+    );
+
+    await cacheTask(
+      userId,
+      projectId,
+      conflict.current,
+    );
+
+    if (
+      conflict.queuedTaskId
+    ) {
+      await removePendingTaskOperation(
+        userId,
+        projectId,
+        conflict.queuedTaskId,
+      );
+    }
+
+    setConflict(null);
+
+    await refreshPendingCount();
+  }
+
+  async function handleApplyMyChange() {
+    if (!conflict) {
+      return;
+    }
+
+    try {
+      setError('');
+
+      const updated =
+        await updateTask(
+          conflict.current.id,
+          {
+            ...conflict.changes,
+
+            baseVersion:
+              conflict.current
+                .version,
+          },
+        );
+
+      setTasks(
+        (current) =>
+          current.map(
+            (task) =>
+              task.id ===
+              updated.id
+                ? updated
+                : task,
+          ),
+      );
+
+      await cacheTask(
+        userId,
+        projectId,
+        updated,
+      );
+
+      if (
+        conflict.queuedTaskId
+      ) {
+        await removePendingTaskOperation(
+          userId,
+          projectId,
+          conflict.queuedTaskId,
+        );
+      }
+
+      setConflict(null);
+
+      await refreshPendingCount();
+    } catch (retryError) {
+      if (
+        retryError.status ===
+        409
+      ) {
+        await showConflict(
+          retryError,
+          null,
+          conflict.current,
+          conflict.changes,
+        );
+
+        return;
+      }
+
+      setError(
+        retryError.message ||
+          'Unable to resolve task conflict',
+      );
+    }
+  }
+
   function handleProjectChange(
     updatedProject,
   ) {
@@ -809,7 +1143,7 @@ export default function BoardPage() {
     );
 
     void cacheProject(
-      user?.id,
+      userId,
       updatedProject,
     );
   }
@@ -889,6 +1223,18 @@ export default function BoardPage() {
           }
           onRetry={
             syncAndRefresh
+          }
+        />
+
+        <TaskConflictNotice
+          conflict={
+            conflict
+          }
+          onUseServer={
+            handleUseServerVersion
+          }
+          onApplyMine={
+            handleApplyMyChange
           }
         />
 

@@ -82,6 +82,12 @@ export const createTaskSchema =
 export const updateTaskSchema =
   z
     .object({
+      baseVersion:
+        z
+          .number()
+          .int()
+          .min(0),
+
       title:
         z
           .string()
@@ -134,9 +140,13 @@ export const updateTaskSchema =
       (data) =>
         Object.keys(
           data
-        ).length > 0,
+        ).some(
+          (key) =>
+            key !==
+            "baseVersion"
+        ),
 
-      "At least one field must be updated"
+      "At least one task field must be updated"
     );
 
 export const taskQuerySchema =
